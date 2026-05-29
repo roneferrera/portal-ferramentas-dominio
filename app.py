@@ -49,7 +49,7 @@ os.makedirs(PASTA_UPLOADS, exist_ok=True)
 os.makedirs(PASTA_ASSETS, exist_ok=True)
 
 # =========================================================
-# ESTILO
+# ESTILO VISUAL
 # =========================================================
 
 st.markdown("""
@@ -131,12 +131,12 @@ st.markdown("""
     min-height: 130px;
 }
 
-.modelo-card {
-    padding: 18px;
-    border-radius: 14px;
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    margin-bottom: 18px;
+.aviso-admin {
+    padding: 14px;
+    border-radius: 10px;
+    background-color: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -259,21 +259,31 @@ inicializar_csvs()
 mostrar_logo()
 
 # =========================================================
-# MENU
+# MENU LATERAL
 # =========================================================
 
 st.sidebar.write("---")
 
-pagina = st.sidebar.radio(
-    "Menu",
+st.sidebar.subheader("Menu público")
+
+pagina_publica = st.sidebar.radio(
+    "Selecione uma opção:",
     [
         "Início",
         "Conversores",
-        "Relatórios BGR",
-        "Histórico BGR",
-        "Painel Administrativo"
+        "Relatórios BGR"
     ]
 )
+
+st.sidebar.write("---")
+st.sidebar.subheader("Área administrativa")
+
+abrir_admin = st.sidebar.checkbox("Abrir Painel Administrativo")
+
+if abrir_admin:
+    pagina = "Painel Administrativo"
+else:
+    pagina = pagina_publica
 
 # =========================================================
 # PÁGINA INÍCIO
@@ -458,64 +468,25 @@ elif pagina == "Relatórios BGR":
                 st.warning("Informe o nome do cliente.")
 
 # =========================================================
-# PÁGINA HISTÓRICO
-# =========================================================
-
-elif pagina == "Histórico BGR":
-    st.title("📑 Histórico de Escolhas BGR")
-
-    df = carregar_csv(ARQUIVO_ESCOLHAS_BGR)
-
-    if df.empty:
-        st.info("Nenhuma escolha registrada ainda.")
-    else:
-        col1, col2 = st.columns(2)
-
-        with col1:
-            filtro_departamento = st.selectbox(
-                "Filtrar departamento:",
-                ["Todos"] + DEPARTAMENTOS,
-                key="hist_dep"
-            )
-
-        with col2:
-            busca_cliente = st.text_input("Buscar cliente:")
-
-        df_filtrado = df.copy()
-
-        if filtro_departamento != "Todos":
-            df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
-
-        if busca_cliente:
-            df_filtrado = df_filtrado[
-                df_filtrado["cliente"].str.contains(busca_cliente, case=False, na=False)
-            ]
-
-        st.dataframe(df_filtrado, use_container_width=True)
-
-        excel = gerar_excel_download({
-            "Historico_BGR": df_filtrado
-        })
-
-        st.download_button(
-            label="📥 Exportar histórico para Excel",
-            data=excel,
-            file_name="historico_escolhas_bgr.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-# =========================================================
 # PAINEL ADMINISTRATIVO
 # =========================================================
 
 elif pagina == "Painel Administrativo":
     st.title("⚙️ Painel Administrativo")
 
-    st.warning("Atenção: esta versão está sem login. Qualquer pessoa com acesso ao link poderá alterar os dados.")
+    st.markdown("""
+    <div class="aviso-admin">
+        <strong>Atenção:</strong> esta versão está sem login. O painel administrativo está separado do menu público,
+        mas ainda não possui senha.
+    </div>
+    """, unsafe_allow_html=True)
 
-    aba1, aba2, aba3, aba4 = st.tabs([
+    st.write("")
+
+    aba1, aba2, aba3, aba4, aba5 = st.tabs([
         "Cadastrar Conversor",
         "Upload Imagem BGR",
+        "Histórico BGR",
         "Gerenciar Dados",
         "Exportações"
     ])
@@ -603,9 +574,64 @@ elif pagina == "Painel Administrativo":
                     st.warning("Preencha nome, departamento e selecione uma imagem.")
 
     # -----------------------------------------------------
-    # ABA GERENCIAR DADOS
+    # ABA HISTÓRICO BGR
     # -----------------------------------------------------
     with aba3:
+        st.subheader("📑 Histórico de Escolhas BGR")
+
+        df = carregar_csv(ARQUIVO_ESCOLHAS_BGR)
+
+        if df.empty:
+            st.info("Nenhuma escolha registrada ainda.")
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                filtro_departamento = st.selectbox(
+                    "Filtrar departamento:",
+                    ["Todos"] + DEPARTAMENTOS,
+                    key="hist_dep_admin"
+                )
+
+            with col2:
+                busca_cliente = st.text_input(
+                    "Buscar cliente:",
+                    key="busca_cliente_admin"
+                )
+
+            df_filtrado = df.copy()
+
+            if filtro_departamento != "Todos":
+                df_filtrado = df_filtrado[
+                    df_filtrado["departamento"] == filtro_departamento
+                ]
+
+            if busca_cliente:
+                df_filtrado = df_filtrado[
+                    df_filtrado["cliente"].str.contains(
+                        busca_cliente,
+                        case=False,
+                        na=False
+                    )
+                ]
+
+            st.dataframe(df_filtrado, use_container_width=True)
+
+            excel = gerar_excel_download({
+                "Historico_BGR": df_filtrado
+            })
+
+            st.download_button(
+                label="📥 Exportar histórico para Excel",
+                data=excel,
+                file_name="historico_escolhas_bgr.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+    # -----------------------------------------------------
+    # ABA GERENCIAR DADOS
+    # -----------------------------------------------------
+    with aba4:
         st.subheader("📋 Gerenciar cadastros")
 
         tipo_dado = st.selectbox(
@@ -641,7 +667,7 @@ elif pagina == "Painel Administrativo":
     # -----------------------------------------------------
     # ABA EXPORTAÇÕES
     # -----------------------------------------------------
-    with aba4:
+    with aba5:
         st.subheader("📦 Exportar bases para Excel")
 
         df_conversores = carregar_csv(ARQUIVO_CONVERSORES)
