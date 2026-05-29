@@ -19,8 +19,9 @@ st.set_page_config(
 # =========================================================
 
 PASTA_DADOS = "dados"
-PASTA_UPLOADS = "uploads/modelos_bgr"
 PASTA_ASSETS = "assets"
+PASTA_UPLOADS_IMAGENS = "uploads/modelos_bgr/imagens"
+PASTA_UPLOADS_BGR = "uploads/modelos_bgr/arquivos_bgr"
 
 ARQUIVO_CONVERSORES = os.path.join(PASTA_DADOS, "conversores.csv")
 ARQUIVO_MODELOS_BGR = os.path.join(PASTA_DADOS, "modelos_bgr.csv")
@@ -45,8 +46,9 @@ STATUS_FERRAMENTAS = [
 # =========================================================
 
 os.makedirs(PASTA_DADOS, exist_ok=True)
-os.makedirs(PASTA_UPLOADS, exist_ok=True)
 os.makedirs(PASTA_ASSETS, exist_ok=True)
+os.makedirs(PASTA_UPLOADS_IMAGENS, exist_ok=True)
+os.makedirs(PASTA_UPLOADS_BGR, exist_ok=True)
 
 # =========================================================
 # ESTILO VISUAL
@@ -196,7 +198,8 @@ def inicializar_csvs():
             "nome",
             "departamento",
             "descricao",
-            "arquivo",
+            "imagem",
+            "arquivo_bgr",
             "status",
             "data_upload"
         ])
@@ -211,6 +214,50 @@ def inicializar_csvs():
             "observacao"
         ])
         df.to_csv(ARQUIVO_ESCOLHAS_BGR, index=False)
+
+
+def garantir_colunas_modelos_bgr():
+    """
+    Garante compatibilidade caso o CSV modelos_bgr.csv tenha sido criado
+    em uma versão anterior com a coluna 'arquivo' em vez de 'imagem' e 'arquivo_bgr'.
+    """
+    if not os.path.exists(ARQUIVO_MODELOS_BGR):
+        return
+
+    df = pd.read_csv(ARQUIVO_MODELOS_BGR)
+
+    alterado = False
+
+    if "imagem" not in df.columns:
+        if "arquivo" in df.columns:
+            df["imagem"] = df["arquivo"]
+        else:
+            df["imagem"] = ""
+        alterado = True
+
+    if "arquivo_bgr" not in df.columns:
+        df["arquivo_bgr"] = ""
+        alterado = True
+
+    colunas_finais = [
+        "nome",
+        "departamento",
+        "descricao",
+        "imagem",
+        "arquivo_bgr",
+        "status",
+        "data_upload"
+    ]
+
+    for coluna in colunas_finais:
+        if coluna not in df.columns:
+            df[coluna] = ""
+            alterado = True
+
+    df = df[colunas_finais]
+
+    if alterado:
+        df.to_csv(ARQUIVO_MODELOS_BGR, index=False)
 
 
 def carregar_csv(caminho):
@@ -251,11 +298,29 @@ def mostrar_logo():
         st.sidebar.markdown("### 🧩 Portal de Ferramentas")
 
 
+def nome_arquivo_seguro(nome_arquivo):
+    return (
+        nome_arquivo
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace("\\", "_")
+        .replace(":", "_")
+        .replace(";", "_")
+    )
+
+
+def valor_texto(valor):
+    if pd.isna(valor):
+        return ""
+    return str(valor).strip()
+
+
 # =========================================================
 # INICIALIZAÇÃO
 # =========================================================
 
 inicializar_csvs()
+garantir_colunas_modelos_bgr()
 mostrar_logo()
 
 # =========================================================
@@ -357,11 +422,12 @@ elif pagina == "Conversores":
 
     df_filtrado = df.copy()
 
-    if filtro_departamento != "Todos":
-        df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
+    if not df_filtrado.empty:
+        if filtro_departamento != "Todos":
+            df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
 
-    if filtro_status != "Todos":
-        df_filtrado = df_filtrado[df_filtrado["status"] == filtro_status]
+        if filtro_status != "Todos":
+            df_filtrado = df_filtrado[df_filtrado["status"] == filtro_status]
 
     if df_filtrado.empty:
         st.info("Nenhum conversor encontrado para os filtros selecionados.")
@@ -375,7 +441,7 @@ elif pagina == "Conversores":
                 <p><strong>Status:</strong> {status_html(row["status"])}</p>
             """, unsafe_allow_html=True)
 
-            if row["status"] == "Ativo" and str(row["url"]).strip():
+            if row["status"] == "Ativo" and valor_texto(row["url"]):
                 st.markdown(f"""
                     <a class="botao-link" href="{row["url"]}" target="_blank">
                         Acessar ferramenta
@@ -402,10 +468,13 @@ elif pagina == "Relatórios BGR":
         DEPARTAMENTOS
     )
 
-    df_dep = df_modelos[
-        (df_modelos["departamento"] == departamento) &
-        (df_modelos["status"] == "Ativo")
-    ] if not df_modelos.empty else pd.DataFrame()
+    if not df_modelos.empty:
+        df_dep = df_modelos[
+            (df_modelos["departamento"] == departamento) &
+            (df_modelos["status"] == "Ativo")
+        ]
+    else:
+        df_dep = pd.DataFrame()
 
     if df_dep.empty:
         st.info("Nenhum modelo BGR ativo cadastrado para este departamento.")
@@ -423,25 +492,60 @@ elif pagina == "Relatórios BGR":
         st.subheader(modelo_info["nome"])
         st.write(modelo_info["descricao"])
 
-        caminho_arquivo = os.path.join(PASTA_UPLOADS, modelo_info["arquivo"])
+        # -------------------------------------------------
+        # Exibir imagem de prévia
+        # -------------------------------------------------
+        nome_imagem = valor_texto(modelo_info.get("imagem", ""))
 
-        if os.path.exists(caminho_arquivo):
-            st.image(
-                caminho_arquivo,
-                caption=modelo_info["nome"],
-                use_container_width=True
-            )
+        if nome_imagem:
+            caminho_imagem = os.path.join(PASTA_UPLOADS_IMAGENS, nome_imagem)
 
-            with open(caminho_arquivo, "rb") as file:
-                st.download_button(
-                    label="📥 Baixar imagem do modelo",
-                    data=file,
-                    file_name=modelo_info["arquivo"],
-                    mime="image/png"
+            if os.path.exists(caminho_imagem):
+                st.image(
+                    caminho_imagem,
+                    caption=modelo_info["nome"],
+                    use_container_width=True
                 )
-        else:
-            st.warning("Imagem do modelo não encontrada no servidor.")
 
+                with open(caminho_imagem, "rb") as file:
+                    st.download_button(
+                        label="📥 Baixar imagem de prévia",
+                        data=file,
+                        file_name=nome_imagem,
+                        mime="application/octet-stream"
+                    )
+            else:
+                st.warning("Imagem do modelo não encontrada no servidor.")
+        else:
+            st.info("Este modelo ainda não possui imagem de prévia cadastrada.")
+
+        # -------------------------------------------------
+        # Download do arquivo .BGR
+        # -------------------------------------------------
+        st.write("---")
+        st.subheader("Arquivo BGR")
+
+        nome_bgr = valor_texto(modelo_info.get("arquivo_bgr", ""))
+
+        if nome_bgr:
+            caminho_bgr = os.path.join(PASTA_UPLOADS_BGR, nome_bgr)
+
+            if os.path.exists(caminho_bgr):
+                with open(caminho_bgr, "rb") as file:
+                    st.download_button(
+                        label="📥 Baixar arquivo .BGR",
+                        data=file,
+                        file_name=nome_bgr,
+                        mime="application/octet-stream"
+                    )
+            else:
+                st.warning("Arquivo .BGR não encontrado no servidor.")
+        else:
+            st.info("Este modelo ainda não possui arquivo .BGR cadastrado.")
+
+        # -------------------------------------------------
+        # Registrar escolha
+        # -------------------------------------------------
         st.write("---")
         st.subheader("Registrar escolha")
 
@@ -485,7 +589,7 @@ elif pagina == "Painel Administrativo":
 
     aba1, aba2, aba3, aba4, aba5 = st.tabs([
         "Cadastrar Conversor",
-        "Upload Imagem BGR",
+        "Upload Modelo BGR",
         "Histórico BGR",
         "Gerenciar Dados",
         "Exportações"
@@ -527,10 +631,14 @@ elif pagina == "Painel Administrativo":
                     st.warning("Preencha nome, departamento e descrição.")
 
     # -----------------------------------------------------
-    # ABA UPLOAD IMAGEM BGR
+    # ABA UPLOAD MODELO BGR
     # -----------------------------------------------------
     with aba2:
-        st.subheader("📤 Upload de imagem do modelo BGR")
+        st.subheader("📤 Upload de modelo BGR")
+
+        st.write(
+            "Cadastre uma imagem de prévia do relatório e, se desejar, o arquivo `.bgr` correspondente."
+        )
 
         with st.form("form_bgr"):
             nome_modelo = st.text_input("Nome do modelo BGR")
@@ -538,22 +646,46 @@ elif pagina == "Painel Administrativo":
             descricao_modelo = st.text_area("Descrição do modelo")
             status_modelo = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
 
-            arquivo = st.file_uploader(
+            imagem = st.file_uploader(
                 "Selecione a imagem de prévia do relatório",
                 type=["png", "jpg", "jpeg"]
             )
 
-            enviar_modelo = st.form_submit_button("Enviar imagem do modelo")
+            arquivo_bgr = st.file_uploader(
+                "Selecione o arquivo .BGR",
+                type=["bgr"]
+            )
+
+            enviar_modelo = st.form_submit_button("Enviar modelo BGR")
 
             if enviar_modelo:
-                if nome_modelo and departamento_modelo and arquivo:
+                if nome_modelo and departamento_modelo and imagem:
                     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                    nome_seguro = arquivo.name.replace(" ", "_")
-                    nome_arquivo_salvo = f"{timestamp}_{nome_seguro}"
-                    caminho_salvar = os.path.join(PASTA_UPLOADS, nome_arquivo_salvo)
 
-                    with open(caminho_salvar, "wb") as f:
-                        f.write(arquivo.getbuffer())
+                    # Salvar imagem
+                    nome_imagem_seguro = nome_arquivo_seguro(imagem.name)
+                    nome_imagem_salva = f"{timestamp}_{nome_imagem_seguro}"
+                    caminho_imagem_salvar = os.path.join(
+                        PASTA_UPLOADS_IMAGENS,
+                        nome_imagem_salva
+                    )
+
+                    with open(caminho_imagem_salvar, "wb") as f:
+                        f.write(imagem.getbuffer())
+
+                    # Salvar arquivo .BGR, se enviado
+                    nome_bgr_salvo = ""
+
+                    if arquivo_bgr is not None:
+                        nome_bgr_seguro = nome_arquivo_seguro(arquivo_bgr.name)
+                        nome_bgr_salvo = f"{timestamp}_{nome_bgr_seguro}"
+                        caminho_bgr_salvar = os.path.join(
+                            PASTA_UPLOADS_BGR,
+                            nome_bgr_salvo
+                        )
+
+                        with open(caminho_bgr_salvar, "wb") as f:
+                            f.write(arquivo_bgr.getbuffer())
 
                     df = carregar_csv(ARQUIVO_MODELOS_BGR)
 
@@ -561,7 +693,8 @@ elif pagina == "Painel Administrativo":
                         "nome": nome_modelo,
                         "departamento": departamento_modelo,
                         "descricao": descricao_modelo,
-                        "arquivo": nome_arquivo_salvo,
+                        "imagem": nome_imagem_salva,
+                        "arquivo_bgr": nome_bgr_salvo,
                         "status": status_modelo,
                         "data_upload": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     }])
@@ -569,9 +702,9 @@ elif pagina == "Painel Administrativo":
                     df = pd.concat([df, novo], ignore_index=True)
                     salvar_csv(df, ARQUIVO_MODELOS_BGR)
 
-                    st.success("Imagem do modelo BGR enviada com sucesso!")
+                    st.success("Modelo BGR enviado com sucesso!")
                 else:
-                    st.warning("Preencha nome, departamento e selecione uma imagem.")
+                    st.warning("Preencha nome, departamento e selecione uma imagem de prévia.")
 
     # -----------------------------------------------------
     # ABA HISTÓRICO BGR
