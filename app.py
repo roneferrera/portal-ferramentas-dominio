@@ -463,113 +463,187 @@ elif pagina == "Relatórios BGR":
 
     df_modelos = carregar_csv(ARQUIVO_MODELOS_BGR)
 
-    departamento = st.selectbox(
-        "Selecione o departamento:",
-        DEPARTAMENTOS
+    st.write(
+        "Consulte os modelos BGR disponíveis, visualize a prévia e baixe o arquivo `.bgr` correspondente."
     )
+
+    col_filtro1, col_filtro2 = st.columns([1, 2])
+
+    with col_filtro1:
+        departamento = st.selectbox(
+            "Selecione o departamento:",
+            DEPARTAMENTOS
+        )
+
+    with col_filtro2:
+        pesquisa = st.text_input(
+            "Pesquisar no nome ou descrição do BGR:",
+            placeholder="Exemplo: folha, fiscal, impostos, balancete, honorários..."
+        )
 
     if not df_modelos.empty:
         df_dep = df_modelos[
             (df_modelos["departamento"] == departamento) &
             (df_modelos["status"] == "Ativo")
-        ]
+        ].copy()
+
+        if pesquisa:
+            df_dep = df_dep[
+                df_dep["descricao"].str.contains(pesquisa, case=False, na=False) |
+                df_dep["nome"].str.contains(pesquisa, case=False, na=False)
+            ]
     else:
         df_dep = pd.DataFrame()
 
+    st.write("---")
+
     if df_dep.empty:
-        st.info("Nenhum modelo BGR ativo cadastrado para este departamento.")
+        st.info("Nenhum modelo BGR encontrado para os filtros selecionados.")
     else:
-        modelos = df_dep["nome"].tolist()
+        st.success(f"{len(df_dep)} modelo(s) BGR encontrado(s).")
 
-        modelo_escolhido = st.radio(
-            "Escolha o modelo BGR:",
-            modelos
-        )
+        for index, modelo_info in df_dep.iterrows():
+            nome_modelo = valor_texto(modelo_info.get("nome", ""))
+            descricao_modelo = valor_texto(modelo_info.get("descricao", ""))
+            nome_imagem = valor_texto(modelo_info.get("imagem", ""))
+            nome_bgr = valor_texto(modelo_info.get("arquivo_bgr", ""))
 
-        modelo_info = df_dep[df_dep["nome"] == modelo_escolhido].iloc[0]
+            st.markdown("""
+            <div class="card">
+            """, unsafe_allow_html=True)
 
-        st.write("---")
-        st.subheader(modelo_info["nome"])
-        st.write(modelo_info["descricao"])
+            col_img, col_desc, col_download = st.columns([1.2, 2.5, 1.2])
 
-        # -------------------------------------------------
-        # Exibir imagem de prévia
-        # -------------------------------------------------
-        nome_imagem = valor_texto(modelo_info.get("imagem", ""))
+            # ---------------------------------------------
+            # Miniatura da imagem
+            # ---------------------------------------------
+            with col_img:
+                st.markdown(f"### {nome_modelo}")
 
-        if nome_imagem:
-            caminho_imagem = os.path.join(PASTA_UPLOADS_IMAGENS, nome_imagem)
-
-            if os.path.exists(caminho_imagem):
-                st.image(
-                    caminho_imagem,
-                    caption=modelo_info["nome"],
-                    use_container_width=True
-                )
-
-                with open(caminho_imagem, "rb") as file:
-                    st.download_button(
-                        label="📥 Baixar imagem de prévia",
-                        data=file,
-                        file_name=nome_imagem,
-                        mime="application/octet-stream"
+                if nome_imagem:
+                    caminho_imagem = os.path.join(
+                        PASTA_UPLOADS_IMAGENS,
+                        nome_imagem
                     )
-            else:
-                st.warning("Imagem do modelo não encontrada no servidor.")
-        else:
-            st.info("Este modelo ainda não possui imagem de prévia cadastrada.")
 
-        # -------------------------------------------------
-        # Download do arquivo .BGR
-        # -------------------------------------------------
-        st.write("---")
-        st.subheader("Arquivo BGR")
+                    if os.path.exists(caminho_imagem):
+                        st.image(
+                            caminho_imagem,
+                            caption="Prévia",
+                            width=220
+                        )
 
-        nome_bgr = valor_texto(modelo_info.get("arquivo_bgr", ""))
+                        with st.expander("🔍 Ver imagem maior"):
+                            st.image(
+                                caminho_imagem,
+                                caption=nome_modelo,
+                                use_container_width=True
+                            )
+                    else:
+                        st.warning("Imagem não encontrada.")
+                else:
+                    st.info("Sem imagem cadastrada.")
 
-        if nome_bgr:
-            caminho_bgr = os.path.join(PASTA_UPLOADS_BGR, nome_bgr)
+            # ---------------------------------------------
+            # Descrição do BGR
+            # ---------------------------------------------
+            with col_desc:
+                st.markdown("#### Descrição")
+                st.write(descricao_modelo)
 
-            if os.path.exists(caminho_bgr):
-                with open(caminho_bgr, "rb") as file:
-                    st.download_button(
-                        label="📥 Baixar arquivo .BGR",
-                        data=file,
-                        file_name=nome_bgr,
-                        mime="application/octet-stream"
+                st.markdown("#### Informações")
+                st.write(f"**Departamento:** {departamento}")
+                st.write(f"**Status:** {modelo_info.get('status', '')}")
+
+                data_upload = valor_texto(modelo_info.get("data_upload", ""))
+                if data_upload:
+                    st.write(f"**Data de upload:** {data_upload}")
+
+            # ---------------------------------------------
+            # Download do arquivo .BGR
+            # ---------------------------------------------
+            with col_download:
+                st.markdown("#### Arquivo")
+
+                if nome_bgr:
+                    caminho_bgr = os.path.join(
+                        PASTA_UPLOADS_BGR,
+                        nome_bgr
                     )
-            else:
-                st.warning("Arquivo .BGR não encontrado no servidor.")
-        else:
-            st.info("Este modelo ainda não possui arquivo .BGR cadastrado.")
+
+                    if os.path.exists(caminho_bgr):
+                        with open(caminho_bgr, "rb") as file:
+                            st.download_button(
+                                label="📥 Baixar .BGR",
+                                data=file,
+                                file_name=nome_bgr,
+                                mime="application/octet-stream",
+                                key=f"download_bgr_{index}"
+                            )
+                    else:
+                        st.warning("Arquivo .BGR não encontrado.")
+                else:
+                    st.info("Sem arquivo .BGR.")
+
+                st.write("---")
+
+                if st.button(
+                    "Selecionar modelo",
+                    key=f"selecionar_modelo_{index}"
+                ):
+                    st.session_state["modelo_bgr_selecionado"] = nome_modelo
+                    st.session_state["departamento_bgr_selecionado"] = departamento
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.write("")
 
         # -------------------------------------------------
-        # Registrar escolha
+        # Registro da escolha
         # -------------------------------------------------
         st.write("---")
-        st.subheader("Registrar escolha")
+        st.subheader("Registrar escolha do modelo")
+
+        modelo_salvo = st.session_state.get("modelo_bgr_selecionado", "")
+
+        if modelo_salvo:
+            st.info(f"Modelo selecionado: **{modelo_salvo}**")
+        else:
+            st.warning("Selecione um modelo acima antes de confirmar a escolha.")
 
         cliente = st.text_input("Nome do cliente")
         observacao = st.text_area("Observações")
 
         if st.button("Confirmar escolha"):
-            if cliente:
+            if not modelo_salvo:
+                st.warning("Selecione um modelo BGR antes de confirmar.")
+            elif not cliente:
+                st.warning("Informe o nome do cliente.")
+            else:
                 df_escolhas = carregar_csv(ARQUIVO_ESCOLHAS_BGR)
 
                 novo = pd.DataFrame([{
                     "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     "cliente": cliente,
-                    "departamento": departamento,
-                    "modelo": modelo_escolhido,
+                    "departamento": st.session_state.get(
+                        "departamento_bgr_selecionado",
+                        departamento
+                    ),
+                    "modelo": modelo_salvo,
                     "observacao": observacao
                 }])
 
-                df_escolhas = pd.concat([df_escolhas, novo], ignore_index=True)
+                df_escolhas = pd.concat(
+                    [df_escolhas, novo],
+                    ignore_index=True
+                )
+
                 salvar_csv(df_escolhas, ARQUIVO_ESCOLHAS_BGR)
 
                 st.success("Escolha registrada com sucesso!")
-            else:
-                st.warning("Informe o nome do cliente.")
+
+                st.session_state["modelo_bgr_selecionado"] = ""
+                st.session_state["departamento_bgr_selecionado"] = ""
 
 # =========================================================
 # PAINEL ADMINISTRATIVO
