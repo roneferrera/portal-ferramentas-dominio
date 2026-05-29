@@ -51,38 +51,45 @@ os.makedirs(PASTA_UPLOADS_IMAGENS, exist_ok=True)
 os.makedirs(PASTA_UPLOADS_BGR, exist_ok=True)
 
 # =========================================================
-# ESTILO VISUAL - THOMSON REUTERS / DOMÍNIO
+# ESTILO VISUAL - TEMA ESCURO THOMSON REUTERS / DOMÍNIO
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* ===============================
-   PALETA THOMSON REUTERS / DOMÍNIO
+   PALETA ESCURA THOMSON REUTERS / DOMÍNIO
 ================================ */
 
 :root {
     --tr-orange: #FF8000;
     --tr-orange-dark: #E66F00;
-    --tr-orange-light: #FFF1E3;
+    --tr-orange-soft: rgba(255, 128, 0, 0.16);
 
-    --tr-gray-900: #333333;
-    --tr-gray-800: #444444;
-    --tr-gray-700: #555555;
-    --tr-gray-600: #666666;
-    --tr-gray-300: #CCCCCC;
-    --tr-gray-200: #E9E9E9;
-    --tr-gray-100: #F7F7F7;
+    --tr-bg-main: #121212;
+    --tr-bg-sidebar: #181818;
+    --tr-bg-card: #1F1F1F;
+    --tr-bg-card-hover: #252525;
+    --tr-bg-input: #242424;
 
-    --tr-white: #FFFFFF;
-    --tr-success-bg: #E8F5E9;
-    --tr-success-text: #2E7D32;
+    --tr-border: #333333;
+    --tr-border-light: #444444;
 
-    --tr-warning-bg: #FFF4E5;
-    --tr-warning-text: #B85C00;
+    --tr-text-main: #F5F5F5;
+    --tr-text-secondary: #D0D0D0;
+    --tr-text-muted: #A8A8A8;
 
-    --tr-info-bg: #EAF2F8;
-    --tr-info-text: #2F5D7C;
+    --tr-success-bg: rgba(46, 125, 50, 0.22);
+    --tr-success-text: #81C784;
+
+    --tr-warning-bg: rgba(255, 128, 0, 0.18);
+    --tr-warning-text: #FFB366;
+
+    --tr-info-bg: rgba(66, 165, 245, 0.18);
+    --tr-info-text: #90CAF9;
+
+    --tr-error-bg: rgba(239, 83, 80, 0.18);
+    --tr-error-text: #EF9A9A;
 }
 
 /* ===============================
@@ -90,8 +97,8 @@ st.markdown("""
 ================================ */
 
 .stApp {
-    background-color: var(--tr-gray-100);
-    color: var(--tr-gray-900);
+    background-color: var(--tr-bg-main);
+    color: var(--tr-text-main);
 }
 
 .block-container {
@@ -100,43 +107,49 @@ st.markdown("""
 }
 
 /* ===============================
-   SIDEBAR
+   TIPOGRAFIA
 ================================ */
 
-section[data-testid="stSidebar"] {
-    background-color: var(--tr-white);
-    border-right: 1px solid var(--tr-gray-200);
+html, body, [class*="css"] {
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p {
-    color: var(--tr-gray-800);
+p, span, label, div {
+    color: var(--tr-text-secondary);
 }
-
-section[data-testid="stSidebar"] hr {
-    border-color: var(--tr-gray-200);
-}
-
-/* ===============================
-   TÍTULOS
-================================ */
 
 h1 {
-    color: var(--tr-gray-900);
+    color: var(--tr-text-main);
     font-weight: 700;
     border-left: 6px solid var(--tr-orange);
     padding-left: 14px;
 }
 
 h2, h3, h4 {
-    color: var(--tr-gray-800);
+    color: var(--tr-text-main);
 }
 
-p, span, label, div {
-    font-family: "Arial", "Helvetica", sans-serif;
+/* ===============================
+   SIDEBAR
+================================ */
+
+section[data-testid="stSidebar"] {
+    background-color: var(--tr-bg-sidebar);
+    border-right: 1px solid var(--tr-border);
+}
+
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div {
+    color: var(--tr-text-secondary);
+}
+
+section[data-testid="stSidebar"] hr {
+    border-color: var(--tr-border);
 }
 
 /* ===============================
@@ -146,25 +159,26 @@ p, span, label, div {
 .card {
     padding: 24px;
     border-radius: 14px;
-    background-color: var(--tr-white);
-    border: 1px solid var(--tr-gray-200);
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
     margin-bottom: 18px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     transition: all 0.2s ease-in-out;
 }
 
 .card:hover {
+    background-color: var(--tr-bg-card-hover);
     border-color: var(--tr-orange);
-    box-shadow: 0 5px 16px rgba(255,128,0,0.16);
+    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
 }
 
 .card h3 {
     margin-top: 0;
-    color: var(--tr-gray-900);
+    color: var(--tr-text-main);
 }
 
 .card p {
-    color: var(--tr-gray-600);
+    color: var(--tr-text-secondary);
 }
 
 /* ===============================
@@ -174,7 +188,7 @@ p, span, label, div {
 .botao-link {
     display: inline-block;
     background-color: var(--tr-orange);
-    color: white !important;
+    color: #FFFFFF !important;
     padding: 10px 18px;
     border-radius: 8px;
     text-decoration: none;
@@ -185,16 +199,16 @@ p, span, label, div {
 
 .botao-link:hover {
     background-color: var(--tr-orange-dark);
-    color: white !important;
+    color: #FFFFFF !important;
 }
 
 /* ===============================
-   BOTÕES NATIVOS DO STREAMLIT
+   BOTÕES NATIVOS STREAMLIT
 ================================ */
 
 .stButton > button {
     background-color: var(--tr-orange);
-    color: white;
+    color: #FFFFFF;
     border: 1px solid var(--tr-orange);
     border-radius: 8px;
     font-weight: 700;
@@ -203,13 +217,17 @@ p, span, label, div {
 
 .stButton > button:hover {
     background-color: var(--tr-orange-dark);
-    color: white;
+    color: #FFFFFF;
     border-color: var(--tr-orange-dark);
+}
+
+.stButton > button:focus {
+    box-shadow: 0 0 0 2px var(--tr-orange-soft);
 }
 
 .stDownloadButton > button {
     background-color: var(--tr-orange);
-    color: white;
+    color: #FFFFFF;
     border: 1px solid var(--tr-orange);
     border-radius: 8px;
     font-weight: 700;
@@ -217,18 +235,29 @@ p, span, label, div {
 
 .stDownloadButton > button:hover {
     background-color: var(--tr-orange-dark);
-    color: white;
+    color: #FFFFFF;
     border-color: var(--tr-orange-dark);
 }
 
+.stDownloadButton > button:focus {
+    box-shadow: 0 0 0 2px var(--tr-orange-soft);
+}
+
 /* ===============================
-   CAMPOS DE FORMULÁRIO
+   INPUTS / SELECTBOX / TEXTAREA
 ================================ */
 
 .stTextInput input,
-.stTextArea textarea,
-.stSelectbox div[data-baseweb="select"] {
+.stTextArea textarea {
+    background-color: var(--tr-bg-input);
+    color: var(--tr-text-main);
+    border: 1px solid var(--tr-border-light);
     border-radius: 8px;
+}
+
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: var(--tr-text-muted);
 }
 
 .stTextInput input:focus,
@@ -237,17 +266,47 @@ p, span, label, div {
     box-shadow: 0 0 0 1px var(--tr-orange) !important;
 }
 
+.stSelectbox div[data-baseweb="select"] {
+    background-color: var(--tr-bg-input);
+    color: var(--tr-text-main);
+    border-radius: 8px;
+}
+
+.stSelectbox div[data-baseweb="select"] > div {
+    background-color: var(--tr-bg-input);
+    color: var(--tr-text-main);
+}
+
+/* Dropdown */
+div[data-baseweb="popover"] {
+    background-color: var(--tr-bg-card);
+}
+
+div[data-baseweb="menu"] {
+    background-color: var(--tr-bg-card);
+    color: var(--tr-text-main);
+}
+
+div[data-baseweb="menu"] li {
+    color: var(--tr-text-main);
+}
+
+div[data-baseweb="menu"] li:hover {
+    background-color: var(--tr-orange-soft);
+}
+
 /* ===============================
    RADIO / CHECKBOX
 ================================ */
 
 .stRadio label,
 .stCheckbox label {
-    color: var(--tr-gray-800);
+    color: var(--tr-text-secondary);
 }
 
-.stCheckbox [data-testid="stMarkdownContainer"] p {
-    color: var(--tr-gray-800);
+.stCheckbox [data-testid="stMarkdownContainer"] p,
+.stRadio [data-testid="stMarkdownContainer"] p {
+    color: var(--tr-text-secondary);
 }
 
 /* ===============================
@@ -291,18 +350,19 @@ p, span, label, div {
 .setor-card {
     padding: 22px;
     border-radius: 14px;
-    background-color: var(--tr-white);
-    border: 1px solid var(--tr-gray-200);
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
     text-align: center;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     min-height: 140px;
     transition: all 0.2s ease-in-out;
 }
 
 .setor-card:hover {
+    background-color: var(--tr-bg-card-hover);
     border-color: var(--tr-orange);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(255,128,0,0.18);
+    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
 }
 
 .setor-card h1 {
@@ -312,12 +372,12 @@ p, span, label, div {
 }
 
 .setor-card h4 {
-    color: var(--tr-gray-800);
+    color: var(--tr-text-main);
     margin-bottom: 4px;
 }
 
 .setor-card p {
-    color: var(--tr-gray-600);
+    color: var(--tr-text-muted);
 }
 
 /* ===============================
@@ -327,9 +387,13 @@ p, span, label, div {
 .aviso-admin {
     padding: 14px;
     border-radius: 10px;
-    background-color: var(--tr-orange-light);
+    background-color: var(--tr-warning-bg);
     color: var(--tr-warning-text);
     border: 1px solid var(--tr-orange);
+}
+
+.aviso-admin strong {
+    color: var(--tr-warning-text);
 }
 
 /* ===============================
@@ -337,15 +401,15 @@ p, span, label, div {
 ================================ */
 
 [data-testid="stMetric"] {
-    background-color: var(--tr-white);
-    border: 1px solid var(--tr-gray-200);
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
     border-radius: 14px;
     padding: 18px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
 }
 
 [data-testid="stMetricLabel"] {
-    color: var(--tr-gray-600);
+    color: var(--tr-text-muted);
 }
 
 [data-testid="stMetricValue"] {
@@ -359,19 +423,20 @@ p, span, label, div {
 
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
+    border-bottom: 1px solid var(--tr-border);
 }
 
 .stTabs [data-baseweb="tab"] {
-    background-color: var(--tr-white);
+    background-color: var(--tr-bg-card);
     border-radius: 8px 8px 0 0;
-    color: var(--tr-gray-700);
-    border: 1px solid var(--tr-gray-200);
+    color: var(--tr-text-secondary);
+    border: 1px solid var(--tr-border);
     padding: 10px 16px;
 }
 
 .stTabs [aria-selected="true"] {
-    background-color: var(--tr-orange-light);
-    color: var(--tr-orange-dark);
+    background-color: var(--tr-orange-soft);
+    color: var(--tr-orange);
     border-bottom: 3px solid var(--tr-orange);
     font-weight: 700;
 }
@@ -381,8 +446,9 @@ p, span, label, div {
 ================================ */
 
 [data-testid="stDataFrame"] {
-    border: 1px solid var(--tr-gray-200);
+    border: 1px solid var(--tr-border);
     border-radius: 10px;
+    background-color: var(--tr-bg-card);
 }
 
 /* ===============================
@@ -391,6 +457,7 @@ p, span, label, div {
 
 div[data-testid="stAlert"] {
     border-radius: 10px;
+    border: 1px solid var(--tr-border);
 }
 
 /* ===============================
@@ -398,8 +465,73 @@ div[data-testid="stAlert"] {
 ================================ */
 
 .streamlit-expanderHeader {
-    color: var(--tr-gray-800);
+    color: var(--tr-text-main);
     font-weight: 700;
+    background-color: var(--tr-bg-card);
+}
+
+div[data-testid="stExpander"] {
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
+    border-radius: 10px;
+}
+
+/* ===============================
+   FILE UPLOADER
+================================ */
+
+[data-testid="stFileUploader"] {
+    background-color: var(--tr-bg-card);
+    border: 1px dashed var(--tr-border-light);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+[data-testid="stFileUploader"] section {
+    background-color: var(--tr-bg-input);
+    border: 1px dashed var(--tr-border-light);
+}
+
+/* ===============================
+   LINHAS / DIVISORES
+================================ */
+
+hr {
+    border-color: var(--tr-border);
+}
+
+/* ===============================
+   LINKS
+================================ */
+
+a {
+    color: var(--tr-orange);
+}
+
+a:hover {
+    color: var(--tr-orange-dark);
+}
+
+/* ===============================
+   SCROLLBAR OPCIONAL
+================================ */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--tr-bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--tr-border-light);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--tr-orange);
 }
 
 </style>
@@ -586,7 +718,6 @@ mostrar_logo()
 # =========================================================
 
 st.sidebar.write("---")
-
 st.sidebar.subheader("Menu público")
 
 pagina_publica = st.sidebar.radio(
@@ -844,7 +975,6 @@ elif pagina == "Relatórios BGR":
                     st.session_state["departamento_bgr_selecionado"] = departamento
 
             st.markdown("</div>", unsafe_allow_html=True)
-
             st.write("")
 
         st.write("---")
