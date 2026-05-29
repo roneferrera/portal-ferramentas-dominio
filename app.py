@@ -51,95 +51,357 @@ os.makedirs(PASTA_UPLOADS_IMAGENS, exist_ok=True)
 os.makedirs(PASTA_UPLOADS_BGR, exist_ok=True)
 
 # =========================================================
-# ESTILO VISUAL
+# ESTILO VISUAL - THOMSON REUTERS / DOMÍNIO
 # =========================================================
 
 st.markdown("""
 <style>
-.block-container {
-    padding-top: 1.5rem;
+
+/* ===============================
+   PALETA THOMSON REUTERS / DOMÍNIO
+================================ */
+
+:root {
+    --tr-orange: #FF8000;
+    --tr-orange-dark: #E66F00;
+    --tr-orange-light: #FFF1E3;
+
+    --tr-gray-900: #333333;
+    --tr-gray-800: #444444;
+    --tr-gray-700: #555555;
+    --tr-gray-600: #666666;
+    --tr-gray-300: #CCCCCC;
+    --tr-gray-200: #E9E9E9;
+    --tr-gray-100: #F7F7F7;
+
+    --tr-white: #FFFFFF;
+    --tr-success-bg: #E8F5E9;
+    --tr-success-text: #2E7D32;
+
+    --tr-warning-bg: #FFF4E5;
+    --tr-warning-text: #B85C00;
+
+    --tr-info-bg: #EAF2F8;
+    --tr-info-text: #2F5D7C;
 }
 
+/* ===============================
+   FUNDO GERAL
+================================ */
+
+.stApp {
+    background-color: var(--tr-gray-100);
+    color: var(--tr-gray-900);
+}
+
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+}
+
+/* ===============================
+   SIDEBAR
+================================ */
+
+section[data-testid="stSidebar"] {
+    background-color: var(--tr-white);
+    border-right: 1px solid var(--tr-gray-200);
+}
+
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p {
+    color: var(--tr-gray-800);
+}
+
+section[data-testid="stSidebar"] hr {
+    border-color: var(--tr-gray-200);
+}
+
+/* ===============================
+   TÍTULOS
+================================ */
+
+h1 {
+    color: var(--tr-gray-900);
+    font-weight: 700;
+    border-left: 6px solid var(--tr-orange);
+    padding-left: 14px;
+}
+
+h2, h3, h4 {
+    color: var(--tr-gray-800);
+}
+
+p, span, label, div {
+    font-family: "Arial", "Helvetica", sans-serif;
+}
+
+/* ===============================
+   CARDS
+================================ */
+
 .card {
-    padding: 22px;
+    padding: 24px;
     border-radius: 14px;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background-color: var(--tr-white);
+    border: 1px solid var(--tr-gray-200);
     margin-bottom: 18px;
-    box-shadow: 0 2px 7px rgba(0,0,0,0.05);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+    border-color: var(--tr-orange);
+    box-shadow: 0 5px 16px rgba(255,128,0,0.16);
 }
 
 .card h3 {
     margin-top: 0;
-    color: #111827;
+    color: var(--tr-gray-900);
 }
 
 .card p {
-    color: #4b5563;
+    color: var(--tr-gray-600);
 }
+
+/* ===============================
+   BOTÃO LINK LARANJA
+================================ */
 
 .botao-link {
     display: inline-block;
-    background-color: #2563eb;
+    background-color: var(--tr-orange);
     color: white !important;
     padding: 10px 18px;
     border-radius: 8px;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 10px;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .botao-link:hover {
-    background-color: #1d4ed8;
+    background-color: var(--tr-orange-dark);
+    color: white !important;
 }
+
+/* ===============================
+   BOTÕES NATIVOS DO STREAMLIT
+================================ */
+
+.stButton > button {
+    background-color: var(--tr-orange);
+    color: white;
+    border: 1px solid var(--tr-orange);
+    border-radius: 8px;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+}
+
+.stButton > button:hover {
+    background-color: var(--tr-orange-dark);
+    color: white;
+    border-color: var(--tr-orange-dark);
+}
+
+.stDownloadButton > button {
+    background-color: var(--tr-orange);
+    color: white;
+    border: 1px solid var(--tr-orange);
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.stDownloadButton > button:hover {
+    background-color: var(--tr-orange-dark);
+    color: white;
+    border-color: var(--tr-orange-dark);
+}
+
+/* ===============================
+   CAMPOS DE FORMULÁRIO
+================================ */
+
+.stTextInput input,
+.stTextArea textarea,
+.stSelectbox div[data-baseweb="select"] {
+    border-radius: 8px;
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--tr-orange) !important;
+    box-shadow: 0 0 0 1px var(--tr-orange) !important;
+}
+
+/* ===============================
+   RADIO / CHECKBOX
+================================ */
+
+.stRadio label,
+.stCheckbox label {
+    color: var(--tr-gray-800);
+}
+
+.stCheckbox [data-testid="stMarkdownContainer"] p {
+    color: var(--tr-gray-800);
+}
+
+/* ===============================
+   STATUS
+================================ */
 
 .status-ativo {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 5px 11px;
     border-radius: 999px;
-    background-color: #dcfce7;
-    color: #166534;
-    font-weight: 600;
+    background-color: var(--tr-success-bg);
+    color: var(--tr-success-text);
+    font-weight: 700;
     font-size: 13px;
 }
 
 .status-manutencao {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 5px 11px;
     border-radius: 999px;
-    background-color: #fef3c7;
-    color: #92400e;
-    font-weight: 600;
+    background-color: var(--tr-warning-bg);
+    color: var(--tr-warning-text);
+    font-weight: 700;
     font-size: 13px;
 }
 
 .status-desenvolvimento {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 5px 11px;
     border-radius: 999px;
-    background-color: #dbeafe;
-    color: #1e40af;
-    font-weight: 600;
+    background-color: var(--tr-info-bg);
+    color: var(--tr-info-text);
+    font-weight: 700;
     font-size: 13px;
 }
+
+/* ===============================
+   CARDS DOS DEPARTAMENTOS
+================================ */
 
 .setor-card {
     padding: 22px;
     border-radius: 14px;
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
+    background-color: var(--tr-white);
+    border: 1px solid var(--tr-gray-200);
     text-align: center;
-    box-shadow: 0 2px 7px rgba(0,0,0,0.05);
-    min-height: 130px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    min-height: 140px;
+    transition: all 0.2s ease-in-out;
 }
+
+.setor-card:hover {
+    border-color: var(--tr-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255,128,0,0.18);
+}
+
+.setor-card h1 {
+    border-left: none;
+    padding-left: 0;
+    color: var(--tr-orange);
+}
+
+.setor-card h4 {
+    color: var(--tr-gray-800);
+    margin-bottom: 4px;
+}
+
+.setor-card p {
+    color: var(--tr-gray-600);
+}
+
+/* ===============================
+   AVISO ADMINISTRATIVO
+================================ */
 
 .aviso-admin {
     padding: 14px;
     border-radius: 10px;
-    background-color: #fff7ed;
-    color: #9a3412;
-    border: 1px solid #fed7aa;
+    background-color: var(--tr-orange-light);
+    color: var(--tr-warning-text);
+    border: 1px solid var(--tr-orange);
 }
+
+/* ===============================
+   MÉTRICAS
+================================ */
+
+[data-testid="stMetric"] {
+    background-color: var(--tr-white);
+    border: 1px solid var(--tr-gray-200);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--tr-gray-600);
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--tr-orange);
+    font-weight: 700;
+}
+
+/* ===============================
+   TABS
+================================ */
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: var(--tr-white);
+    border-radius: 8px 8px 0 0;
+    color: var(--tr-gray-700);
+    border: 1px solid var(--tr-gray-200);
+    padding: 10px 16px;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: var(--tr-orange-light);
+    color: var(--tr-orange-dark);
+    border-bottom: 3px solid var(--tr-orange);
+    font-weight: 700;
+}
+
+/* ===============================
+   DATAFRAME / EDITOR
+================================ */
+
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--tr-gray-200);
+    border-radius: 10px;
+}
+
+/* ===============================
+   ALERTAS STREAMLIT
+================================ */
+
+div[data-testid="stAlert"] {
+    border-radius: 10px;
+}
+
+/* ===============================
+   EXPANDER
+================================ */
+
+.streamlit-expanderHeader {
+    color: var(--tr-gray-800);
+    font-weight: 700;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -217,10 +479,6 @@ def inicializar_csvs():
 
 
 def garantir_colunas_modelos_bgr():
-    """
-    Garante compatibilidade caso o CSV modelos_bgr.csv tenha sido criado
-    em uma versão anterior com a coluna 'arquivo' em vez de 'imagem' e 'arquivo_bgr'.
-    """
     if not os.path.exists(ARQUIVO_MODELOS_BGR):
         return
 
@@ -514,9 +772,6 @@ elif pagina == "Relatórios BGR":
 
             col_img, col_desc, col_download = st.columns([1.2, 2.5, 1.2])
 
-            # ---------------------------------------------
-            # Miniatura da imagem
-            # ---------------------------------------------
             with col_img:
                 st.markdown(f"### {nome_modelo}")
 
@@ -544,9 +799,6 @@ elif pagina == "Relatórios BGR":
                 else:
                     st.info("Sem imagem cadastrada.")
 
-            # ---------------------------------------------
-            # Descrição do BGR
-            # ---------------------------------------------
             with col_desc:
                 st.markdown("#### Descrição")
                 st.write(descricao_modelo)
@@ -559,9 +811,6 @@ elif pagina == "Relatórios BGR":
                 if data_upload:
                     st.write(f"**Data de upload:** {data_upload}")
 
-            # ---------------------------------------------
-            # Download do arquivo .BGR
-            # ---------------------------------------------
             with col_download:
                 st.markdown("#### Arquivo")
 
@@ -598,9 +847,6 @@ elif pagina == "Relatórios BGR":
 
             st.write("")
 
-        # -------------------------------------------------
-        # Registro da escolha
-        # -------------------------------------------------
         st.write("---")
         st.subheader("Registrar escolha do modelo")
 
@@ -669,9 +915,6 @@ elif pagina == "Painel Administrativo":
         "Exportações"
     ])
 
-    # -----------------------------------------------------
-    # ABA CADASTRAR CONVERSOR
-    # -----------------------------------------------------
     with aba1:
         st.subheader("➕ Cadastrar novo conversor")
 
@@ -704,9 +947,6 @@ elif pagina == "Painel Administrativo":
                 else:
                     st.warning("Preencha nome, departamento e descrição.")
 
-    # -----------------------------------------------------
-    # ABA UPLOAD MODELO BGR
-    # -----------------------------------------------------
     with aba2:
         st.subheader("📤 Upload de modelo BGR")
 
@@ -736,7 +976,6 @@ elif pagina == "Painel Administrativo":
                 if nome_modelo and departamento_modelo and imagem:
                     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-                    # Salvar imagem
                     nome_imagem_seguro = nome_arquivo_seguro(imagem.name)
                     nome_imagem_salva = f"{timestamp}_{nome_imagem_seguro}"
                     caminho_imagem_salvar = os.path.join(
@@ -747,7 +986,6 @@ elif pagina == "Painel Administrativo":
                     with open(caminho_imagem_salvar, "wb") as f:
                         f.write(imagem.getbuffer())
 
-                    # Salvar arquivo .BGR, se enviado
                     nome_bgr_salvo = ""
 
                     if arquivo_bgr is not None:
@@ -780,9 +1018,6 @@ elif pagina == "Painel Administrativo":
                 else:
                     st.warning("Preencha nome, departamento e selecione uma imagem de prévia.")
 
-    # -----------------------------------------------------
-    # ABA HISTÓRICO BGR
-    # -----------------------------------------------------
     with aba3:
         st.subheader("📑 Histórico de Escolhas BGR")
 
@@ -835,9 +1070,6 @@ elif pagina == "Painel Administrativo":
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-    # -----------------------------------------------------
-    # ABA GERENCIAR DADOS
-    # -----------------------------------------------------
     with aba4:
         st.subheader("📋 Gerenciar cadastros")
 
@@ -871,9 +1103,6 @@ elif pagina == "Painel Administrativo":
             salvar_csv(df_editado, arquivo_base)
             st.success("Alterações salvas com sucesso!")
 
-    # -----------------------------------------------------
-    # ABA EXPORTAÇÕES
-    # -----------------------------------------------------
     with aba5:
         st.subheader("📦 Exportar bases para Excel")
 
