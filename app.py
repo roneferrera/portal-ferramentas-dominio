@@ -81,30 +81,31 @@ section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
 section[data-testid="stSidebar"] div { color: var(--tr-text-secondary); }
 section[data-testid="stSidebar"] hr { border-color: var(--tr-border); }
-.card { padding: 24px; border-radius: 14px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: all 0.2s ease-in-out; }
-.card:hover { background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange); box-shadow: 0 6px 20px rgba(255,128,0,0.18); }
-.card h3 { margin-top: 0; color: var(--tr-text-main); }
-.card p { color: var(--tr-text-secondary); }
-.botao-link { display: inline-block; background-color: var(--tr-orange); color: #FFFFFF !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; margin-top: 10px; }
+.lista-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 10px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); margin-bottom: 8px; transition: all 0.2s; }
+.lista-item:hover { border-color: var(--tr-orange); background-color: var(--tr-bg-card-hover); }
+.lista-nome { font-weight: 700; color: var(--tr-text-main); font-size: 15px; }
+.lista-desc { color: var(--tr-text-muted); font-size: 13px; margin-top: 2px; }
+.lista-dep { color: var(--tr-text-secondary); font-size: 13px; }
+.card { padding: 24px; border-radius: 14px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+.botao-link { display: inline-block; background-color: var(--tr-orange); color: #FFFFFF !important; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; white-space: nowrap; }
 .botao-link:hover { background-color: var(--tr-orange-dark); color: #FFFFFF !important; }
 .stButton > button, .stDownloadButton > button { background-color: var(--tr-orange); color: #FFFFFF; border: 1px solid var(--tr-orange); border-radius: 8px; font-weight: 700; }
 .stButton > button:hover, .stDownloadButton > button:hover { background-color: var(--tr-orange-dark); color: #FFFFFF; border-color: var(--tr-orange-dark); }
 .stTextInput input, .stTextArea textarea { background-color: var(--tr-bg-input); color: var(--tr-text-main); border: 1px solid var(--tr-border-light); border-radius: 8px; }
-.stTextInput input::placeholder, .stTextArea textarea::placeholder { color: var(--tr-text-muted); }
 .stTextInput input:focus, .stTextArea textarea:focus { border-color: var(--tr-orange) !important; box-shadow: 0 0 0 1px var(--tr-orange) !important; }
 .stSelectbox div[data-baseweb="select"] { background-color: var(--tr-bg-input); color: var(--tr-text-main); border-radius: 8px; }
 .stRadio label, .stCheckbox label { color: var(--tr-text-secondary); }
-.status-ativo { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-success-bg); color: var(--tr-success-text); font-weight: 700; font-size: 13px; }
-.status-manutencao { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-warning-bg); color: var(--tr-warning-text); font-weight: 700; font-size: 13px; }
-.status-desenvolvimento { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-info-bg); color: var(--tr-info-text); font-weight: 700; font-size: 13px; }
+.status-ativo { display: inline-block; padding: 3px 10px; border-radius: 999px; background-color: var(--tr-success-bg); color: var(--tr-success-text); font-weight: 700; font-size: 12px; }
+.status-manutencao { display: inline-block; padding: 3px 10px; border-radius: 999px; background-color: var(--tr-warning-bg); color: var(--tr-warning-text); font-weight: 700; font-size: 12px; }
+.status-desenvolvimento { display: inline-block; padding: 3px 10px; border-radius: 999px; background-color: var(--tr-info-bg); color: var(--tr-info-text); font-weight: 700; font-size: 12px; }
 .setor-card { padding: 22px; border-radius: 14px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.35); min-height: 140px; transition: all 0.2s ease-in-out; }
-.setor-card:hover { background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,128,0,0.18); }
+.setor-card:hover { background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange); transform: translateY(-2px); }
 .setor-card h1 { border-left: none; padding-left: 0; color: var(--tr-orange); }
 .setor-card h4 { color: var(--tr-text-main); margin-bottom: 4px; }
 .setor-card p { color: var(--tr-text-muted); }
 .aviso-admin { padding: 14px; border-radius: 10px; background-color: var(--tr-warning-bg); color: var(--tr-warning-text); border: 1px solid var(--tr-orange); }
 .aviso-admin strong { color: var(--tr-warning-text); }
-[data-testid="stMetric"] { background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); border-radius: 14px; padding: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+[data-testid="stMetric"] { background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); border-radius: 14px; padding: 18px; }
 [data-testid="stMetricLabel"] { color: var(--tr-text-muted); }
 [data-testid="stMetricValue"] { color: var(--tr-orange); font-weight: 700; }
 .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid var(--tr-border); }
@@ -119,6 +120,8 @@ a { color: var(--tr-orange); }
 a:hover { color: var(--tr-orange-dark); }
 .lixeira-restaurar { padding: 12px 16px; border-radius: 10px; background-color: var(--tr-danger-bg); border: 1px solid #c62828; margin-bottom: 10px; }
 .lixeira-restaurar strong { color: var(--tr-danger-text); }
+.admin-row { display: flex; align-items: center; padding: 12px 16px; border-radius: 10px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); margin-bottom: 6px; gap: 10px; transition: all 0.2s; }
+.admin-row:hover { border-color: var(--tr-orange); background-color: var(--tr-bg-card-hover); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,11 +174,6 @@ def excluir_registro(tabela: str, id_registro: int):
         sb.table(tabela).delete().eq("id", id_registro).execute()
     except Exception as e:
         st.error(f"Erro ao excluir em '{tabela}': {e}")
-
-
-def excluir_varios(tabela: str, ids: list):
-    for id_reg in ids:
-        excluir_registro(tabela, id_reg)
 
 
 def salvar_tabela_completa(tabela: str, df: pd.DataFrame):
@@ -234,11 +232,6 @@ def url_publica(bucket: str, nome_arquivo: str) -> str:
 # =========================================================
 
 def registrar_auditoria(acao: str, tabela: str, descricao: str, dados_antes: str = "", dados_depois: str = ""):
-    """
-    Registra ação na tabela de auditoria.
-    NUNCA chamar fora de um bloco condicional (if botão, if form_submit, etc.)
-    para evitar registros duplicados a cada re-render da página.
-    """
     try:
         inserir_registro("auditoria", {
             "data_hora":    datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
@@ -271,27 +264,22 @@ def mostrar_lixeira():
         return
     for i, item in enumerate(lixeira):
         nome_reg = item["registro"].get("nome", f"Registro #{i+1}")
-        col_msg, col_restaurar, col_fechar = st.columns([5, 1.5, 1])
+        col_msg, col_rest, col_fec = st.columns([5, 1.5, 1])
         with col_msg:
             st.markdown(
-                f'<div class="lixeira-restaurar">🗑️ <strong>"{nome_reg}"</strong> foi excluído — '
-                f'{item["excluido_em"]}</div>',
+                f'<div class="lixeira-restaurar">🗑️ <strong>"{nome_reg}"</strong> foi excluído — {item["excluido_em"]}</div>',
                 unsafe_allow_html=True
             )
-        with col_restaurar:
+        with col_rest:
             if st.button("↩️ Restaurar", key=f"restaurar_{i}"):
                 dados_sem_id = {k: v for k, v in item["registro"].items() if k != "id"}
                 inserir_registro(item["tabela"], dados_sem_id)
-                registrar_auditoria(
-                    "RESTAURAÇÃO", item["tabela"],
-                    f"Registro restaurado: {nome_reg}",
-                    dados_depois=str(dados_sem_id)
-                )
+                registrar_auditoria("RESTAURAÇÃO", item["tabela"], f"Restaurado: {nome_reg}", dados_depois=str(dados_sem_id))
                 st.session_state["lixeira"].pop(i)
-                st.success(f'"{nome_reg}" restaurado com sucesso!')
+                st.success(f'"{nome_reg}" restaurado!')
                 st.rerun()
-        with col_fechar:
-            if st.button("✖ Fechar", key=f"fechar_lixeira_{i}"):
+        with col_fec:
+            if st.button("✖", key=f"fechar_lixeira_{i}"):
                 st.session_state["lixeira"].pop(i)
                 st.rerun()
 
@@ -316,11 +304,11 @@ def inicializar_conversores_padrao():
 
 def status_html(status):
     if status == "Ativo":
-        return '<span class="status-ativo">Ativo</span>'
+        return '<span class="status-ativo">● Ativo</span>'
     elif status == "Em manutenção":
-        return '<span class="status-manutencao">Em manutenção</span>'
+        return '<span class="status-manutencao">⚙ Manutenção</span>'
     else:
-        return '<span class="status-desenvolvimento">Em desenvolvimento</span>'
+        return '<span class="status-desenvolvimento">🔧 Em desenvolvimento</span>'
 
 
 def gerar_excel_download(dfs: dict):
@@ -354,8 +342,7 @@ def valor_texto(valor):
 
 
 def email_valido(email):
-    email = str(email).strip()
-    return "@" in email and "." in email
+    return "@" in str(email).strip() and "." in str(email).strip()
 
 # =========================================================
 # INICIALIZAÇÃO
@@ -370,15 +357,10 @@ mostrar_logo()
 
 st.sidebar.write("---")
 st.sidebar.subheader("Menu público")
-
-pagina_publica = st.sidebar.radio(
-    "Selecione uma opção:",
-    ["Início", "Conversores", "Relatórios BGR"]
-)
+pagina_publica = st.sidebar.radio("Selecione uma opção:", ["Início", "Conversores", "Relatórios BGR"])
 
 st.sidebar.write("---")
 st.sidebar.subheader("Área administrativa")
-
 abrir_admin = st.sidebar.checkbox("Abrir Painel Administrativo")
 
 pagina = "Painel Administrativo" if abrir_admin else pagina_publica
@@ -405,9 +387,7 @@ if pagina == "Início":
 
     st.write("---")
     st.subheader("Departamentos")
-
     icones = {"Fiscal": "📊", "Folha de Pagamento": "👥", "Contabilidade": "📚", "Patrimônio": "🏢", "Honorários": "💰"}
-
     cols = st.columns(5)
     for i, dep in enumerate(DEPARTAMENTOS):
         with cols[i]:
@@ -417,11 +397,10 @@ if pagina == "Início":
                 <h1>{icones[dep]}</h1>
                 <h4>{dep}</h4>
                 <p>{qtd} ferramenta(s)</p>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
 
 # =========================================================
-# PÁGINA CONVERSORES
+# PÁGINA CONVERSORES — MODO LISTA COM EXPANDER
 # =========================================================
 
 elif pagina == "Conversores":
@@ -429,179 +408,203 @@ elif pagina == "Conversores":
 
     df = carregar_tabela("conversores")
 
-    col1, col2 = st.columns(2)
+    # Filtros
+    col1, col2, col3 = st.columns([3, 2, 2])
     with col1:
-        filtro_departamento = st.selectbox("Filtrar por departamento:", ["Todos"] + DEPARTAMENTOS)
+        busca_conv = st.text_input("🔍 Buscar por palavra-chave:", placeholder="Nome, descrição...")
     with col2:
-        filtro_status = st.selectbox("Filtrar por status:", ["Todos"] + STATUS_FERRAMENTAS)
+        filtro_dep_conv = st.selectbox("Departamento:", ["Todos"] + DEPARTAMENTOS, key="fdep_conv")
+    with col3:
+        filtro_stat_conv = st.selectbox("Status:", ["Todos"] + STATUS_FERRAMENTAS, key="fstat_conv")
 
-    df_filtrado = df.copy()
-    if not df_filtrado.empty:
-        if filtro_departamento != "Todos":
-            df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
-        if filtro_status != "Todos":
-            df_filtrado = df_filtrado[df_filtrado["status"] == filtro_status]
+    df_f = df.copy()
+    if not df_f.empty:
+        if busca_conv:
+            df_f = df_f[
+                df_f["nome"].str.contains(busca_conv, case=False, na=False) |
+                df_f["descricao"].str.contains(busca_conv, case=False, na=False)
+            ]
+        if filtro_dep_conv != "Todos":
+            df_f = df_f[df_f["departamento"] == filtro_dep_conv]
+        if filtro_stat_conv != "Todos":
+            df_f = df_f[df_f["status"] == filtro_stat_conv]
 
-    if df_filtrado.empty:
+    st.write("---")
+
+    if df_f.empty:
         st.info("Nenhum conversor encontrado para os filtros selecionados.")
     else:
-        for _, row in df_filtrado.iterrows():
-            st.markdown(f"""
-            <div class="card">
-                <h3>{row["nome"]}</h3>
-                <p><strong>Departamento:</strong> {row["departamento"]}</p>
-                <p>{row["descricao"]}</p>
-                <p><strong>Status:</strong> {status_html(row["status"])}</p>
-            """, unsafe_allow_html=True)
-            if row["status"] == "Ativo" and valor_texto(row.get("url", "")):
-                st.markdown(f'<a class="botao-link" href="{row["url"]}" target="_blank">Acessar ferramenta</a>', unsafe_allow_html=True)
-            elif row["status"] == "Em manutenção":
-                st.warning("Esta ferramenta está em manutenção.")
-            else:
-                st.info("Esta ferramenta está em desenvolvimento.")
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.caption(f"{len(df_f)} conversor(es) encontrado(s)")
+
+        for _, row in df_f.iterrows():
+            nome_c  = valor_texto(row["nome"])
+            dep_c   = valor_texto(row["departamento"])
+            desc_c  = valor_texto(row["descricao"])
+            stat_c  = valor_texto(row["status"])
+            url_c   = valor_texto(row.get("url", ""))
+            id_c    = row.get("id", "")
+
+            # Linha principal com botão de acesso à direita
+            col_info, col_btn = st.columns([8, 2])
+            with col_info:
+                with st.expander(f"**{nome_c}** — {dep_c}  {status_html(stat_c)}", expanded=False):
+                    st.markdown(f"**Descrição:** {desc_c}")
+                    st.markdown(f"**Departamento:** {dep_c}")
+                    st.markdown(f"**Status:** {status_html(stat_c)}", unsafe_allow_html=True)
+                    data_cad = valor_texto(row.get("data_cadastro", ""))
+                    if data_cad:
+                        st.markdown(f"**Cadastrado em:** {data_cad}")
+                    if stat_c == "Em manutenção":
+                        st.warning("Esta ferramenta está temporariamente em manutenção.")
+                    elif stat_c == "Em desenvolvimento":
+                        st.info("Esta ferramenta está em desenvolvimento.")
+
+            with col_btn:
+                st.write("")
+                if stat_c == "Ativo" and url_c:
+                    st.markdown(f'<a class="botao-link" href="{url_c}" target="_blank">🔗 Acessar</a>', unsafe_allow_html=True)
+                elif stat_c == "Em manutenção":
+                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
 
 # =========================================================
-# PÁGINA RELATÓRIOS BGR
+# PÁGINA RELATÓRIOS BGR — MODO LISTA COM EXPANDER
 # =========================================================
 
 elif pagina == "Relatórios BGR":
     st.title("📄 Relatórios BGR")
+    st.write("Clique em um modelo para ver os detalhes e solicitar acesso ao arquivo `.bgr`.")
 
     df_modelos = carregar_tabela("modelos_bgr")
-    st.write("Consulte os modelos BGR disponíveis. Para baixar o arquivo `.bgr`, informe seus dados para registro da solicitação.")
 
-    col_filtro1, col_filtro2 = st.columns([1, 2])
-    with col_filtro1:
-        departamento = st.selectbox("Selecione o departamento:", DEPARTAMENTOS)
-    with col_filtro2:
-        pesquisa = st.text_input("Pesquisar no nome ou descrição do BGR:", placeholder="Exemplo: folha, fiscal, impostos...")
+    # Filtros
+    col1, col2, col3 = st.columns([3, 2, 2])
+    with col1:
+        busca_bgr = st.text_input("🔍 Buscar por palavra-chave:", placeholder="Nome, descrição...", key="busca_bgr_pub")
+    with col2:
+        filtro_dep_bgr = st.selectbox("Departamento:", ["Todos"] + DEPARTAMENTOS, key="fdep_bgr_pub")
+    with col3:
+        filtro_stat_bgr = st.selectbox("Status:", ["Todos"] + STATUS_FERRAMENTAS, key="fstat_bgr_pub")
 
+    df_bgr_f = pd.DataFrame()
     if not df_modelos.empty:
-        df_dep = df_modelos[(df_modelos["departamento"] == departamento) & (df_modelos["status"] == "Ativo")].copy()
-        if pesquisa:
-            df_dep = df_dep[
-                df_dep["descricao"].str.contains(pesquisa, case=False, na=False) |
-                df_dep["nome"].str.contains(pesquisa, case=False, na=False)
+        df_bgr_f = df_modelos.copy()
+        if busca_bgr:
+            df_bgr_f = df_bgr_f[
+                df_bgr_f["nome"].str.contains(busca_bgr, case=False, na=False) |
+                df_bgr_f["descricao"].str.contains(busca_bgr, case=False, na=False)
             ]
-    else:
-        df_dep = pd.DataFrame()
+        if filtro_dep_bgr != "Todos":
+            df_bgr_f = df_bgr_f[df_bgr_f["departamento"] == filtro_dep_bgr]
+        if filtro_stat_bgr != "Todos":
+            df_bgr_f = df_bgr_f[df_bgr_f["status"] == filtro_stat_bgr]
+        else:
+            df_bgr_f = df_bgr_f[df_bgr_f["status"] == "Ativo"] if filtro_stat_bgr == "Todos" else df_bgr_f
+        # Por padrão mostra apenas ativos se nenhum filtro de status aplicado
+        if filtro_stat_bgr == "Todos":
+            df_bgr_f = df_modelos.copy()
+            if busca_bgr:
+                df_bgr_f = df_bgr_f[
+                    df_bgr_f["nome"].str.contains(busca_bgr, case=False, na=False) |
+                    df_bgr_f["descricao"].str.contains(busca_bgr, case=False, na=False)
+                ]
+            if filtro_dep_bgr != "Todos":
+                df_bgr_f = df_bgr_f[df_bgr_f["departamento"] == filtro_dep_bgr]
+            df_bgr_f = df_bgr_f[df_bgr_f["status"] == "Ativo"]
 
     st.write("---")
 
-    if df_dep.empty:
+    if df_bgr_f.empty:
         st.info("Nenhum modelo BGR encontrado para os filtros selecionados.")
     else:
-        st.success(f"{len(df_dep)} modelo(s) BGR encontrado(s).")
+        st.caption(f"{len(df_bgr_f)} modelo(s) encontrado(s)")
 
-        for index, modelo_info in df_dep.iterrows():
-            nome_modelo      = valor_texto(modelo_info.get("nome", ""))
-            descricao_modelo = valor_texto(modelo_info.get("descricao", ""))
-            nome_imagem      = valor_texto(modelo_info.get("imagem", ""))
-            nome_bgr         = valor_texto(modelo_info.get("arquivo_bgr", ""))
+        for index, modelo_info in df_bgr_f.iterrows():
+            nome_m  = valor_texto(modelo_info.get("nome", ""))
+            dep_m   = valor_texto(modelo_info.get("departamento", ""))
+            desc_m  = valor_texto(modelo_info.get("descricao", ""))
+            stat_m  = valor_texto(modelo_info.get("status", ""))
+            img_m   = valor_texto(modelo_info.get("imagem", ""))
+            bgr_m   = valor_texto(modelo_info.get("arquivo_bgr", ""))
+            data_up = valor_texto(modelo_info.get("data_upload", ""))
 
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            col_img, col_desc, col_acao = st.columns([1.2, 2.5, 1.2])
+            col_info_m, col_btn_m = st.columns([8, 2])
+            with col_info_m:
+                with st.expander(f"**{nome_m}** — {dep_m}  {status_html(stat_m)}", expanded=False):
+                    col_det1, col_det2 = st.columns([2, 1])
+                    with col_det1:
+                        st.markdown(f"**Descrição:** {desc_m}")
+                        st.markdown(f"**Departamento:** {dep_m}")
+                        st.markdown(f"**Status:** {status_html(stat_m)}", unsafe_allow_html=True)
+                        if data_up:
+                            st.markdown(f"**Data de upload:** {data_up}")
+                        if bgr_m:
+                            st.success("Arquivo .BGR disponível para download.")
+                        else:
+                            st.warning("Nenhum arquivo .BGR cadastrado.")
+                    with col_det2:
+                        if img_m:
+                            img_url = url_publica(BUCKET_IMAGENS, img_m)
+                            if img_url:
+                                st.image(img_url, caption="Prévia", use_container_width=True)
 
-            with col_img:
-                st.markdown(f"### {nome_modelo}")
-                if nome_imagem:
-                    img_url = url_publica(BUCKET_IMAGENS, nome_imagem)
-                    if img_url:
-                        st.image(img_url, caption="Prévia", width=220)
-                        with st.expander("🔍 Ver imagem maior"):
-                            st.image(img_url, caption=nome_modelo, use_container_width=True)
-                    else:
-                        st.warning("Imagem não encontrada.")
+                    if bgr_m:
+                        st.write("---")
+                        st.markdown("**Para baixar o arquivo .BGR, preencha os dados abaixo:**")
+                        with st.form(f"form_sol_{index}"):
+                            c1, c2 = st.columns(2)
+                            with c1:
+                                nome_u  = st.text_input("Nome", key=f"nome_u_{index}")
+                                email_u = st.text_input("E-mail", key=f"email_u_{index}")
+                                cnpj_u  = st.text_input("CNPJ", key=f"cnpj_u_{index}")
+                            with c2:
+                                cod_u = st.text_input("Código cliente Domínio", key=f"cod_u_{index}")
+                                obs_u = st.text_area("Observações", key=f"obs_u_{index}", height=100)
+                            confirmar_m = st.form_submit_button("📥 Registrar e liberar download")
+
+                            if confirmar_m:
+                                if not nome_u:
+                                    st.warning("Informe o nome.")
+                                elif not email_valido(email_u):
+                                    st.warning("Informe um e-mail válido.")
+                                elif not cnpj_u:
+                                    st.warning("Informe o CNPJ.")
+                                elif not cod_u:
+                                    st.warning("Informe o código cliente Domínio.")
+                                else:
+                                    inserir_registro("solicitacoes_bgr", {
+                                        "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                                        "nome_usuario": nome_u,
+                                        "email_usuario": email_u,
+                                        "cnpj": cnpj_u,
+                                        "codigo_cliente_dominio": cod_u,
+                                        "departamento": dep_m,
+                                        "modelo": nome_m,
+                                        "arquivo_bgr": bgr_m,
+                                        "observacao": obs_u,
+                                        "status": "Liberado"
+                                    })
+                                    st.session_state[f"liberado_{index}"] = True
+                                    st.success("Solicitação registrada! Download liberado.")
+
+                        if st.session_state.get(f"liberado_{index}", False):
+                            bgr_bytes = baixar_arquivo(BUCKET_BGR, bgr_m)
+                            if bgr_bytes:
+                                st.download_button(
+                                    label="⬇️ Baixar .BGR",
+                                    data=bgr_bytes,
+                                    file_name=bgr_m,
+                                    mime="application/octet-stream",
+                                    key=f"dl_bgr_{index}"
+                                )
+
+            with col_btn_m:
+                st.write("")
+                if bgr_m:
+                    st.markdown(f'<span class="status-ativo">📄 BGR disponível</span>', unsafe_allow_html=True)
                 else:
-                    st.info("Sem imagem cadastrada.")
-
-            with col_desc:
-                st.markdown("#### Descrição")
-                st.write(descricao_modelo)
-                st.markdown("#### Informações")
-                st.write(f"**Departamento:** {departamento}")
-                st.write(f"**Status:** {modelo_info.get('status', '')}")
-                data_upload = valor_texto(modelo_info.get("data_upload", ""))
-                if data_upload:
-                    st.write(f"**Data de upload:** {data_upload}")
-
-            with col_acao:
-                st.markdown("#### Acesso")
-                if nome_bgr:
-                    if st.button("Solicitar acesso", key=f"solicitar_modelo_{index}"):
-                        st.session_state["modelo_bgr_solicitado"]       = nome_modelo
-                        st.session_state["arquivo_bgr_solicitado"]      = nome_bgr
-                        st.session_state["departamento_bgr_solicitado"] = departamento
-                        st.session_state["download_bgr_liberado"]       = False
-                        st.success("Modelo selecionado. Preencha os dados abaixo.")
-                else:
-                    st.info("Sem arquivo .BGR cadastrado.")
-
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.write("")
-
-        st.write("---")
-        st.subheader("Solicitar acesso ao modelo BGR")
-
-        modelo_solicitado       = st.session_state.get("modelo_bgr_solicitado", "")
-        arquivo_solicitado      = st.session_state.get("arquivo_bgr_solicitado", "")
-        departamento_solicitado = st.session_state.get("departamento_bgr_solicitado", "")
-
-        if modelo_solicitado:
-            st.info(f"Modelo selecionado: **{modelo_solicitado}**")
-        else:
-            st.warning("Selecione um modelo acima antes de solicitar o acesso.")
-
-        with st.form("form_solicitacao_bgr"):
-            nome_usuario           = st.text_input("Nome")
-            email_usuario          = st.text_input("E-mail")
-            cnpj                   = st.text_input("CNPJ")
-            codigo_cliente_dominio = st.text_input("Código cliente Domínio")
-            observacao             = st.text_area("Observações")
-            confirmar = st.form_submit_button("Registrar e liberar download")
-
-            if confirmar:
-                if not modelo_solicitado:
-                    st.warning("Selecione um modelo BGR antes de confirmar.")
-                elif not nome_usuario:
-                    st.warning("Informe o nome.")
-                elif not email_usuario:
-                    st.warning("Informe o e-mail.")
-                elif not email_valido(email_usuario):
-                    st.warning("Informe um e-mail válido.")
-                elif not cnpj:
-                    st.warning("Informe o CNPJ.")
-                elif not codigo_cliente_dominio:
-                    st.warning("Informe o código cliente Domínio.")
-                else:
-                    inserir_registro("solicitacoes_bgr", {
-                        "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                        "nome_usuario": nome_usuario,
-                        "email_usuario": email_usuario,
-                        "cnpj": cnpj,
-                        "codigo_cliente_dominio": codigo_cliente_dominio,
-                        "departamento": departamento_solicitado,
-                        "modelo": modelo_solicitado,
-                        "arquivo_bgr": arquivo_solicitado,
-                        "observacao": observacao,
-                        "status": "Liberado"
-                    })
-                    st.session_state["download_bgr_liberado"] = True
-                    st.success("Solicitação registrada com sucesso. Download liberado.")
-
-        if st.session_state.get("download_bgr_liberado", False) and arquivo_solicitado:
-            bgr_bytes = baixar_arquivo(BUCKET_BGR, arquivo_solicitado)
-            if bgr_bytes:
-                st.download_button(
-                    label="📥 Baixar .BGR",
-                    data=bgr_bytes,
-                    file_name=arquivo_solicitado,
-                    mime="application/octet-stream",
-                    key="download_bgr_liberado_btn"
-                )
-            else:
-                st.warning("Arquivo .BGR não encontrado no storage.")
+                    st.markdown(f'<span class="status-desenvolvimento">📄 Sem arquivo</span>', unsafe_allow_html=True)
 
 # =========================================================
 # PAINEL ADMINISTRATIVO
@@ -617,13 +620,12 @@ elif pagina == "Painel Administrativo":
     """, unsafe_allow_html=True)
 
     st.write("")
-
     mostrar_lixeira()
 
     aba1, aba2, aba3, aba4, aba5 = st.tabs([
         "🛠️ Conversores",
         "📄 Modelos BGR",
-        "📥 Solicitações BGR",
+        "📥 Solicitações",
         "📦 Exportações",
         "🔍 Auditoria"
     ])
@@ -638,162 +640,176 @@ elif pagina == "Painel Administrativo":
         modo_conv     = st.session_state.get("modo_conv", "cadastro")
         editando_conv = st.session_state.get("editando_conv", None)
 
-        label_exp_conv = "✏️ Editando conversor — clique para expandir/recolher" if modo_conv == "edicao" else "➕ Novo conversor — clique para expandir/recolher"
-        expanded_conv  = st.session_state.get("expandir_form_conv", False)
+        label_exp = "✏️ Editando conversor" if modo_conv == "edicao" else "➕ Novo conversor"
+        with st.expander(label_exp, expanded=st.session_state.get("expandir_form_conv", False)):
 
-        with st.expander(label_exp_conv, expanded=expanded_conv):
-
+            linha = None
             if modo_conv == "edicao" and editando_conv is not None:
-                df_conv_edit = carregar_tabela("conversores")
-                linha = df_conv_edit[df_conv_edit["id"] == editando_conv]
-                if linha.empty:
-                    st.session_state["modo_conv"]        = "cadastro"
-                    st.session_state["editando_conv"]     = None
-                    st.session_state["expandir_form_conv"] = False
-                    st.rerun()
-                linha = linha.iloc[0]
-            else:
-                linha = None
+                df_tmp = carregar_tabela("conversores")
+                res    = df_tmp[df_tmp["id"] == editando_conv]
+                if not res.empty:
+                    linha = res.iloc[0]
 
-            with st.form("form_conversor_principal"):
-                col_f1, col_f2 = st.columns(2)
-                with col_f1:
-                    f_nome = st.text_input("Nome do conversor", value=valor_texto(linha["nome"]) if linha is not None else "")
-                    f_dep  = st.selectbox("Departamento", DEPARTAMENTOS,
+            with st.form("form_conv"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    f_nome   = st.text_input("Nome", value=valor_texto(linha["nome"]) if linha is not None else "")
+                    f_dep    = st.selectbox("Departamento", DEPARTAMENTOS,
                         index=DEPARTAMENTOS.index(linha["departamento"]) if linha is not None and linha["departamento"] in DEPARTAMENTOS else 0)
-                    f_url  = st.text_input("URL", value=valor_texto(linha.get("url", "")) if linha is not None else "")
-                with col_f2:
-                    f_desc   = st.text_area("Descrição", value=valor_texto(linha["descricao"]) if linha is not None else "", height=120)
+                    f_url    = st.text_input("URL", value=valor_texto(linha.get("url","")) if linha is not None else "")
+                with c2:
+                    f_desc   = st.text_area("Descrição", value=valor_texto(linha["descricao"]) if linha is not None else "", height=110)
                     f_status = st.selectbox("Status", STATUS_FERRAMENTAS,
                         index=STATUS_FERRAMENTAS.index(linha["status"]) if linha is not None and linha["status"] in STATUS_FERRAMENTAS else 0)
 
-                col_b1, col_b2 = st.columns([1, 3])
-                with col_b1:
-                    enviar_conv = st.form_submit_button("💾 Salvar" if modo_conv == "edicao" else "➕ Cadastrar")
-                with col_b2:
+                cb1, cb2 = st.columns([1, 3])
+                with cb1:
+                    enviar = st.form_submit_button("💾 Salvar" if modo_conv == "edicao" else "➕ Cadastrar")
+                with cb2:
                     if modo_conv == "edicao":
-                        cancelar_conv = st.form_submit_button("✖ Cancelar")
-                        if cancelar_conv:
-                            st.session_state["modo_conv"]        = "cadastro"
-                            st.session_state["editando_conv"]     = None
-                            st.session_state["expandir_form_conv"] = False
+                        if st.form_submit_button("✖ Cancelar"):
+                            st.session_state.update({"modo_conv": "cadastro", "editando_conv": None, "expandir_form_conv": False})
                             st.rerun()
 
-                if enviar_conv:
+                if enviar:
                     if f_nome and f_dep and f_desc:
                         dados = {"nome": f_nome, "departamento": f_dep, "descricao": f_desc, "url": f_url, "status": f_status}
-                        if modo_conv == "edicao" and editando_conv is not None:
-                            dados_antes = str(linha.to_dict())
+                        if modo_conv == "edicao" and editando_conv and linha is not None:
                             atualizar_registro("conversores", int(editando_conv), dados)
-                            registrar_auditoria("EDIÇÃO", "conversores", f"Conversor editado: {f_nome}", dados_antes, str(dados))
-                            st.success("Conversor atualizado!")
-                            st.session_state["modo_conv"]        = "cadastro"
-                            st.session_state["editando_conv"]     = None
-                            st.session_state["expandir_form_conv"] = False
+                            registrar_auditoria("EDIÇÃO", "conversores", f"Editado: {f_nome}", str(linha.to_dict()), str(dados))
+                            st.success("Atualizado!")
+                            st.session_state.update({"modo_conv": "cadastro", "editando_conv": None, "expandir_form_conv": False})
                         else:
                             dados["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                             inserir_registro("conversores", dados)
-                            registrar_auditoria("CADASTRO", "conversores", f"Novo conversor: {f_nome}", dados_depois=str(dados))
-                            st.success("Conversor cadastrado!")
+                            registrar_auditoria("CADASTRO", "conversores", f"Novo: {f_nome}", dados_depois=str(dados))
+                            st.success("Cadastrado!")
                             st.session_state["expandir_form_conv"] = False
                         st.rerun()
                     else:
                         st.warning("Preencha nome, departamento e descrição.")
 
         st.write("---")
-        st.markdown("#### 📋 Lista de Conversores")
 
         df_conv = carregar_tabela("conversores")
 
         if df_conv.empty:
-            st.info("Nenhum conversor cadastrado ainda.")
+            st.info("Nenhum conversor cadastrado.")
         else:
+            # Barra de busca e filtros da lista admin
+            ca1, ca2, ca3 = st.columns([3, 2, 2])
+            with ca1:
+                busca_adm_conv = st.text_input("🔍 Buscar:", key="busca_adm_conv", placeholder="Nome ou descrição...")
+            with ca2:
+                fdep_adm_conv = st.selectbox("Departamento:", ["Todos"] + DEPARTAMENTOS, key="fdep_adm_conv")
+            with ca3:
+                fstat_adm_conv = st.selectbox("Status:", ["Todos"] + STATUS_FERRAMENTAS, key="fstat_adm_conv")
+
+            df_conv_f = df_conv.copy()
+            if busca_adm_conv:
+                df_conv_f = df_conv_f[
+                    df_conv_f["nome"].str.contains(busca_adm_conv, case=False, na=False) |
+                    df_conv_f["descricao"].str.contains(busca_adm_conv, case=False, na=False)
+                ]
+            if fdep_adm_conv != "Todos":
+                df_conv_f = df_conv_f[df_conv_f["departamento"] == fdep_adm_conv]
+            if fstat_adm_conv != "Todos":
+                df_conv_f = df_conv_f[df_conv_f["status"] == fstat_adm_conv]
+
+            # Modo seleção múltipla
             modo_sel_conv = st.checkbox("☑️ Selecionar múltiplos para exclusão em lote", key="modo_sel_conv")
             ids_sel_conv  = []
 
             if modo_sel_conv:
-                marcar_todos_conv = st.checkbox("✅ Marcar todos / Desmarcar todos", key="marcar_todos_conv")
+                marcar_todos = st.checkbox("✅ Marcar todos / Desmarcar todos", key="marcar_todos_conv")
 
             # Cabeçalho
             if modo_sel_conv:
-                c = st.columns([0.4, 3.2, 2, 1.5, 0.7, 0.7])
-                headers = ["", "Nome / URL", "Departamento", "Status", "✏️", "🗑️"]
+                hc = st.columns([0.4, 3.5, 2, 1.5, 0.6, 0.6])
+                for h, col in zip(["", "Nome", "Departamento", "Status", "", ""], hc):
+                    col.markdown(f"**{h}**")
             else:
-                c = st.columns([3.6, 2, 1.5, 0.7, 0.7])
-                headers = ["Nome / URL", "Departamento", "Status", "✏️", "🗑️"]
-            for h, col in zip(headers, c):
-                col.markdown(f"**{h}**")
-            st.markdown("<hr style='margin:4px 0 10px 0'>", unsafe_allow_html=True)
+                hc = st.columns([3.9, 2, 1.5, 0.6, 0.6])
+                for h, col in zip(["Nome", "Departamento", "Status", "", ""], hc):
+                    col.markdown(f"**{h}**")
+            st.markdown("<hr style='margin:4px 0 8px 0; border-color:#333'>", unsafe_allow_html=True)
 
-            for _, row_c in df_conv.iterrows():
+            for _, row_c in df_conv_f.iterrows():
                 id_c   = int(row_c["id"])
                 nome_c = valor_texto(row_c["nome"])
                 dep_c  = valor_texto(row_c["departamento"])
                 stat_c = valor_texto(row_c["status"])
-                url_c  = valor_texto(row_c.get("url", ""))
 
                 if modo_sel_conv:
-                    col_chk, col_info, col_dep, col_stat, col_edit, col_del = st.columns([0.4, 3.2, 2, 1.5, 0.7, 0.7])
-                    with col_chk:
-                        if st.checkbox("", key=f"chk_conv_{id_c}", value=marcar_todos_conv):
+                    cc = st.columns([0.4, 3.5, 2, 1.5, 0.6, 0.6])
+                    with cc[0]:
+                        if st.checkbox("", key=f"chk_conv_{id_c}", value=marcar_todos):
                             ids_sel_conv.append(id_c)
+                    with cc[1]:
+                        st.markdown(f"**{nome_c}**")
+                    with cc[2]:
+                        st.write(dep_c)
+                    with cc[3]:
+                        st.markdown(status_html(stat_c), unsafe_allow_html=True)
+                    with cc[4]:
+                        if st.button("✏️", key=f"edit_conv_{id_c}"):
+                            st.session_state.update({"modo_conv": "edicao", "editando_conv": id_c, "expandir_form_conv": True})
+                            st.rerun()
+                    with cc[5]:
+                        if st.button("🗑️", key=f"del_conv_{id_c}"):
+                            st.session_state[f"popup_conv_{id_c}"] = True
                 else:
-                    col_info, col_dep, col_stat, col_edit, col_del = st.columns([3.6, 2, 1.5, 0.7, 0.7])
+                    cc = st.columns([3.9, 2, 1.5, 0.6, 0.6])
+                    with cc[0]:
+                        st.markdown(f"**{nome_c}**")
+                    with cc[1]:
+                        st.write(dep_c)
+                    with cc[2]:
+                        st.markdown(status_html(stat_c), unsafe_allow_html=True)
+                    with cc[3]:
+                        if st.button("✏️", key=f"edit_conv_{id_c}"):
+                            st.session_state.update({"modo_conv": "edicao", "editando_conv": id_c, "expandir_form_conv": True})
+                            st.rerun()
+                    with cc[4]:
+                        if st.button("🗑️", key=f"del_conv_{id_c}"):
+                            st.session_state[f"popup_conv_{id_c}"] = True
 
-                with col_info:
-                    st.markdown(f"**{nome_c}**")
-                    if url_c:
-                        st.markdown(f"[🔗 Acessar]({url_c})")
-                with col_dep:
-                    st.write(dep_c)
-                with col_stat:
-                    st.markdown(status_html(stat_c), unsafe_allow_html=True)
-                with col_edit:
-                    if st.button("✏️", key=f"edit_conv_{id_c}", help="Editar"):
-                        st.session_state["modo_conv"]         = "edicao"
-                        st.session_state["editando_conv"]      = id_c
-                        st.session_state["expandir_form_conv"] = True
-                        st.rerun()
-                with col_del:
-                    if st.button("🗑️", key=f"del_conv_{id_c}", help="Excluir"):
-                        st.session_state[f"popup_del_conv_{id_c}"] = True
-
-                if st.session_state.get(f"popup_del_conv_{id_c}", False):
-                    st.warning(f"⚠️ Confirmar exclusão de **{nome_c}**?")
-                    col_s, col_n, _ = st.columns([1, 1, 6])
-                    with col_s:
+                if st.session_state.get(f"popup_conv_{id_c}", False):
+                    st.warning(f"⚠️ Excluir **{nome_c}**?")
+                    cs, cn, _ = st.columns([1, 1, 7])
+                    with cs:
                         if st.button("✅ Sim", key=f"sim_conv_{id_c}"):
                             adicionar_lixeira("conversores", row_c.to_dict())
                             excluir_registro("conversores", id_c)
-                            registrar_auditoria("EXCLUSÃO", "conversores", f"Excluído: {nome_c}", dados_antes=str(row_c.to_dict()))
-                            st.session_state.pop(f"popup_del_conv_{id_c}", None)
+                            registrar_auditoria("EXCLUSÃO", "conversores", f"Excluído: {nome_c}", str(row_c.to_dict()))
+                            st.session_state.pop(f"popup_conv_{id_c}", None)
                             st.rerun()
-                    with col_n:
+                    with cn:
                         if st.button("❌ Não", key=f"nao_conv_{id_c}"):
-                            st.session_state.pop(f"popup_del_conv_{id_c}", None)
+                            st.session_state.pop(f"popup_conv_{id_c}", None)
                             st.rerun()
 
+            # Exclusão em lote
             if modo_sel_conv and ids_sel_conv:
-                st.write("")
                 st.error(f"⚠️ {len(ids_sel_conv)} item(s) selecionado(s).")
                 if st.button("🗑️ Excluir selecionados", key="btn_lote_conv"):
                     st.session_state["popup_lote_conv"] = True
 
-            if st.session_state.get("popup_lote_conv", False) and ids_sel_conv:
-                nomes_lote = df_conv[df_conv["id"].isin(ids_sel_conv)]["nome"].tolist()
-                st.warning(f"⚠️ Confirmar exclusão de: **{', '.join(nomes_lote)}**?")
-                col_sl, col_nl, _ = st.columns([1, 1, 6])
-                with col_sl:
+            if st.session_state.get("popup_lote_conv") and ids_sel_conv:
+                nomes_l = df_conv[df_conv["id"].isin(ids_sel_conv)]["nome"].tolist()
+                st.warning(f"⚠️ Confirmar exclusão de: **{', '.join(nomes_l)}**?")
+                csl, cnl, _ = st.columns([1, 1, 7])
+                with csl:
                     if st.button("✅ Confirmar", key="conf_lote_conv"):
                         for id_l in ids_sel_conv:
                             r = df_conv[df_conv["id"] == id_l].iloc[0]
                             adicionar_lixeira("conversores", r.to_dict())
                             excluir_registro("conversores", id_l)
-                        registrar_auditoria("EXCLUSÃO EM LOTE", "conversores", f"Excluídos: {', '.join(nomes_lote)}")
+                        registrar_auditoria("EXCLUSÃO EM LOTE", "conversores", f"Excluídos: {', '.join(nomes_l)}")
                         st.session_state.pop("popup_lote_conv", None)
-                        st.success("Itens excluídos!")
+                        st.success("Excluídos!")
                         st.rerun()
-                with col_nl:
+                with cnl:
                     if st.button("❌ Cancelar", key="canc_lote_conv"):
                         st.session_state.pop("popup_lote_conv", None)
                         st.rerun()
@@ -808,223 +824,247 @@ elif pagina == "Painel Administrativo":
         modo_bgr     = st.session_state.get("modo_bgr", "cadastro")
         editando_bgr = st.session_state.get("editando_bgr", None)
 
-        label_exp_bgr = "✏️ Editando modelo BGR — clique para expandir/recolher" if modo_bgr == "edicao" else "➕ Novo modelo BGR — clique para expandir/recolher"
-        expanded_bgr  = st.session_state.get("expandir_form_bgr", False)
+        label_exp_bgr = "✏️ Editando modelo BGR" if modo_bgr == "edicao" else "➕ Novo modelo BGR"
+        with st.expander(label_exp_bgr, expanded=st.session_state.get("expandir_form_bgr", False)):
 
-        with st.expander(label_exp_bgr, expanded=expanded_bgr):
-
+            linha_bgr      = None
+            nome_img_atual = ""
             if modo_bgr == "edicao" and editando_bgr is not None:
-                df_bgr_edit = carregar_tabela("modelos_bgr")
-                linha_bgr   = df_bgr_edit[df_bgr_edit["id"] == editando_bgr]
-                if linha_bgr.empty:
-                    st.session_state["modo_bgr"]        = "cadastro"
-                    st.session_state["editando_bgr"]     = None
-                    st.session_state["expandir_form_bgr"] = False
-                    st.rerun()
-                linha_bgr      = linha_bgr.iloc[0]
-                nome_img_atual = valor_texto(linha_bgr.get("imagem", ""))
-                if nome_img_atual:
-                    iu = url_publica(BUCKET_IMAGENS, nome_img_atual)
-                    if iu:
-                        st.image(iu, caption="Imagem atual", width=160)
-            else:
-                linha_bgr      = None
-                nome_img_atual = ""
+                df_tmp_bgr = carregar_tabela("modelos_bgr")
+                res_bgr    = df_tmp_bgr[df_tmp_bgr["id"] == editando_bgr]
+                if not res_bgr.empty:
+                    linha_bgr      = res_bgr.iloc[0]
+                    nome_img_atual = valor_texto(linha_bgr.get("imagem", ""))
+                    if nome_img_atual:
+                        iu = url_publica(BUCKET_IMAGENS, nome_img_atual)
+                        if iu:
+                            st.image(iu, caption="Imagem atual", width=150)
 
-            with st.form("form_bgr_principal"):
-                col_b1, col_b2 = st.columns(2)
-                with col_b1:
-                    b_nome   = st.text_input("Nome do modelo BGR", value=valor_texto(linha_bgr["nome"]) if linha_bgr is not None else "")
+            with st.form("form_bgr"):
+                b1, b2 = st.columns(2)
+                with b1:
+                    b_nome   = st.text_input("Nome", value=valor_texto(linha_bgr["nome"]) if linha_bgr is not None else "")
                     b_dep    = st.selectbox("Departamento", DEPARTAMENTOS,
                         index=DEPARTAMENTOS.index(linha_bgr["departamento"]) if linha_bgr is not None and linha_bgr["departamento"] in DEPARTAMENTOS else 0)
                     b_status = st.selectbox("Status", STATUS_FERRAMENTAS,
                         index=STATUS_FERRAMENTAS.index(linha_bgr["status"]) if linha_bgr is not None and linha_bgr["status"] in STATUS_FERRAMENTAS else 0)
-                with col_b2:
-                    b_desc = st.text_area("Descrição", value=valor_texto(linha_bgr["descricao"]) if linha_bgr is not None else "", height=120)
+                with b2:
+                    b_desc = st.text_area("Descrição", value=valor_texto(linha_bgr["descricao"]) if linha_bgr is not None else "", height=110)
 
-                b_imagem  = st.file_uploader("Substituir imagem (opcional)" if modo_bgr == "edicao" else "Imagem de prévia *", type=["png", "jpg", "jpeg"])
-                b_arquivo = st.file_uploader("Substituir arquivo .BGR (opcional)" if modo_bgr == "edicao" else "Arquivo .BGR", type=["bgr"])
+                b_img = st.file_uploader("Substituir imagem (opcional)" if modo_bgr == "edicao" else "Imagem de prévia *", type=["png","jpg","jpeg"])
+                b_arq = st.file_uploader("Substituir arquivo .BGR (opcional)" if modo_bgr == "edicao" else "Arquivo .BGR", type=["bgr"])
 
-                col_bb1, col_bb2 = st.columns([1, 3])
-                with col_bb1:
+                bb1, bb2 = st.columns([1, 3])
+                with bb1:
                     enviar_bgr = st.form_submit_button("💾 Salvar" if modo_bgr == "edicao" else "➕ Cadastrar")
-                with col_bb2:
+                with bb2:
                     if modo_bgr == "edicao":
-                        cancelar_bgr = st.form_submit_button("✖ Cancelar")
-                        if cancelar_bgr:
-                            st.session_state["modo_bgr"]        = "cadastro"
-                            st.session_state["editando_bgr"]     = None
-                            st.session_state["expandir_form_bgr"] = False
+                        if st.form_submit_button("✖ Cancelar"):
+                            st.session_state.update({"modo_bgr": "cadastro", "editando_bgr": None, "expandir_form_bgr": False})
                             st.rerun()
 
                 if enviar_bgr:
                     if b_nome and b_dep:
-                        if modo_bgr == "cadastro" and b_imagem is None:
+                        if modo_bgr == "cadastro" and b_img is None:
                             st.warning("Selecione uma imagem de prévia.")
                         else:
                             ts             = datetime.now().strftime("%Y%m%d%H%M%S")
                             nome_img_final = nome_img_atual
-                            if b_imagem is not None:
-                                nome_img_final = f"{ts}_{nome_arquivo_seguro(b_imagem.name)}"
-                                ext_i = b_imagem.name.split(".")[-1].lower()
-                                ct_i  = "image/jpeg" if ext_i == "jpg" else f"image/{ext_i}"
-                                upload_arquivo(BUCKET_IMAGENS, nome_img_final, b_imagem.getbuffer().tobytes(), ct_i)
+                            if b_img:
+                                nome_img_final = f"{ts}_{nome_arquivo_seguro(b_img.name)}"
+                                ext_i = b_img.name.split(".")[-1].lower()
+                                upload_arquivo(BUCKET_IMAGENS, nome_img_final, b_img.getbuffer().tobytes(), "image/jpeg" if ext_i == "jpg" else f"image/{ext_i}")
 
-                            nome_bgr_final = valor_texto(linha_bgr.get("arquivo_bgr", "")) if linha_bgr is not None else ""
-                            if b_arquivo is not None:
-                                nome_bgr_final = f"{ts}_{nome_arquivo_seguro(b_arquivo.name)}"
-                                upload_arquivo(BUCKET_BGR, nome_bgr_final, b_arquivo.getbuffer().tobytes(), "application/octet-stream")
+                            nome_bgr_final = valor_texto(linha_bgr.get("arquivo_bgr","")) if linha_bgr is not None else ""
+                            if b_arq:
+                                nome_bgr_final = f"{ts}_{nome_arquivo_seguro(b_arq.name)}"
+                                upload_arquivo(BUCKET_BGR, nome_bgr_final, b_arq.getbuffer().tobytes(), "application/octet-stream")
 
                             dados_bgr = {"nome": b_nome, "departamento": b_dep, "descricao": b_desc, "status": b_status, "imagem": nome_img_final, "arquivo_bgr": nome_bgr_final}
 
-                            if modo_bgr == "edicao" and editando_bgr is not None:
-                                dados_antes_bgr = str(linha_bgr.to_dict())
+                            if modo_bgr == "edicao" and editando_bgr and linha_bgr is not None:
                                 atualizar_registro("modelos_bgr", int(editando_bgr), dados_bgr)
-                                registrar_auditoria("EDIÇÃO", "modelos_bgr", f"BGR editado: {b_nome}", dados_antes_bgr, str(dados_bgr))
-                                st.success("Modelo BGR atualizado!")
-                                st.session_state["modo_bgr"]        = "cadastro"
-                                st.session_state["editando_bgr"]     = None
-                                st.session_state["expandir_form_bgr"] = False
+                                registrar_auditoria("EDIÇÃO", "modelos_bgr", f"BGR editado: {b_nome}", str(linha_bgr.to_dict()), str(dados_bgr))
+                                st.success("Atualizado!")
+                                st.session_state.update({"modo_bgr": "cadastro", "editando_bgr": None, "expandir_form_bgr": False})
                             else:
                                 dados_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                                 inserir_registro("modelos_bgr", dados_bgr)
                                 registrar_auditoria("UPLOAD", "modelos_bgr", f"Novo BGR: {b_nome}", dados_depois=str(dados_bgr))
-                                st.success("Modelo BGR cadastrado!")
+                                st.success("Cadastrado!")
                                 st.session_state["expandir_form_bgr"] = False
                             st.rerun()
                     else:
                         st.warning("Preencha nome e departamento.")
 
         st.write("---")
-        st.markdown("#### 📋 Lista de Modelos BGR")
 
-        df_bgr_lista = carregar_tabela("modelos_bgr")
+        df_bgr = carregar_tabela("modelos_bgr")
 
-        if df_bgr_lista.empty:
-            st.info("Nenhum modelo BGR cadastrado ainda.")
+        if df_bgr.empty:
+            st.info("Nenhum modelo BGR cadastrado.")
         else:
+            ba1, ba2, ba3 = st.columns([3, 2, 2])
+            with ba1:
+                busca_adm_bgr = st.text_input("🔍 Buscar:", key="busca_adm_bgr", placeholder="Nome ou descrição...")
+            with ba2:
+                fdep_adm_bgr = st.selectbox("Departamento:", ["Todos"] + DEPARTAMENTOS, key="fdep_adm_bgr")
+            with ba3:
+                fstat_adm_bgr = st.selectbox("Status:", ["Todos"] + STATUS_FERRAMENTAS, key="fstat_adm_bgr")
+
+            df_bgr_f = df_bgr.copy()
+            if busca_adm_bgr:
+                df_bgr_f = df_bgr_f[
+                    df_bgr_f["nome"].str.contains(busca_adm_bgr, case=False, na=False) |
+                    df_bgr_f["descricao"].str.contains(busca_adm_bgr, case=False, na=False)
+                ]
+            if fdep_adm_bgr != "Todos":
+                df_bgr_f = df_bgr_f[df_bgr_f["departamento"] == fdep_adm_bgr]
+            if fstat_adm_bgr != "Todos":
+                df_bgr_f = df_bgr_f[df_bgr_f["status"] == fstat_adm_bgr]
+
             modo_sel_bgr = st.checkbox("☑️ Selecionar múltiplos para exclusão em lote", key="modo_sel_bgr")
             ids_sel_bgr  = []
 
             if modo_sel_bgr:
                 marcar_todos_bgr = st.checkbox("✅ Marcar todos / Desmarcar todos", key="marcar_todos_bgr")
 
-            for _, row_b in df_bgr_lista.iterrows():
+            # Cabeçalho
+            if modo_sel_bgr:
+                hb = st.columns([0.4, 0.8, 3, 2, 1.5, 0.6, 0.6])
+                for h, col in zip(["", "", "Nome", "Departamento", "Status", "", ""], hb):
+                    col.markdown(f"**{h}**")
+            else:
+                hb = st.columns([0.8, 3.4, 2, 1.5, 0.6, 0.6])
+                for h, col in zip(["", "Nome", "Departamento", "Status", "", ""], hb):
+                    col.markdown(f"**{h}**")
+            st.markdown("<hr style='margin:4px 0 8px 0; border-color:#333'>", unsafe_allow_html=True)
+
+            for _, row_b in df_bgr_f.iterrows():
                 id_b   = int(row_b["id"])
                 nome_b = valor_texto(row_b["nome"])
                 dep_b  = valor_texto(row_b["departamento"])
                 stat_b = valor_texto(row_b["status"])
-                img_b  = valor_texto(row_b.get("imagem", ""))
-                desc_b = valor_texto(row_b.get("descricao", ""))
+                img_b  = valor_texto(row_b.get("imagem",""))
+                desc_b = valor_texto(row_b.get("descricao",""))
 
                 if modo_sel_bgr:
-                    col_chk_b, col_img_b, col_info_b, col_dep_b, col_stat_b, col_edit_b, col_del_b = st.columns([0.4, 0.9, 3, 1.8, 1.5, 0.7, 0.7])
-                    with col_chk_b:
+                    bc = st.columns([0.4, 0.8, 3, 2, 1.5, 0.6, 0.6])
+                    with bc[0]:
                         if st.checkbox("", key=f"chk_bgr_{id_b}", value=marcar_todos_bgr):
                             ids_sel_bgr.append(id_b)
+                    with bc[1]:
+                        if img_b:
+                            iu_b = url_publica(BUCKET_IMAGENS, img_b)
+                            if iu_b:
+                                st.image(iu_b, width=55)
+                    with bc[2]:
+                        st.markdown(f"**{nome_b}**")
+                        st.caption(desc_b[:60] + "..." if len(desc_b) > 60 else desc_b)
+                    with bc[3]:
+                        st.write(dep_b)
+                    with bc[4]:
+                        st.markdown(status_html(stat_b), unsafe_allow_html=True)
+                    with bc[5]:
+                        if st.button("✏️", key=f"edit_bgr_{id_b}"):
+                            st.session_state.update({"modo_bgr": "edicao", "editando_bgr": id_b, "expandir_form_bgr": True})
+                            st.rerun()
+                    with bc[6]:
+                        if st.button("🗑️", key=f"del_bgr_{id_b}"):
+                            st.session_state[f"popup_bgr_{id_b}"] = True
                 else:
-                    col_img_b, col_info_b, col_dep_b, col_stat_b, col_edit_b, col_del_b = st.columns([0.9, 3.4, 1.8, 1.5, 0.7, 0.7])
+                    bc = st.columns([0.8, 3.4, 2, 1.5, 0.6, 0.6])
+                    with bc[0]:
+                        if img_b:
+                            iu_b = url_publica(BUCKET_IMAGENS, img_b)
+                            if iu_b:
+                                st.image(iu_b, width=55)
+                    with bc[1]:
+                        st.markdown(f"**{nome_b}**")
+                        st.caption(desc_b[:60] + "..." if len(desc_b) > 60 else desc_b)
+                    with bc[2]:
+                        st.write(dep_b)
+                    with bc[3]:
+                        st.markdown(status_html(stat_b), unsafe_allow_html=True)
+                    with bc[4]:
+                        if st.button("✏️", key=f"edit_bgr_{id_b}"):
+                            st.session_state.update({"modo_bgr": "edicao", "editando_bgr": id_b, "expandir_form_bgr": True})
+                            st.rerun()
+                    with bc[5]:
+                        if st.button("🗑️", key=f"del_bgr_{id_b}"):
+                            st.session_state[f"popup_bgr_{id_b}"] = True
 
-                with col_img_b:
-                    if img_b:
-                        iu_b = url_publica(BUCKET_IMAGENS, img_b)
-                        if iu_b:
-                            st.image(iu_b, width=65)
-                with col_info_b:
-                    st.markdown(f"**{nome_b}**")
-                    st.caption(desc_b[:80] + "..." if len(desc_b) > 80 else desc_b)
-                with col_dep_b:
-                    st.write(dep_b)
-                with col_stat_b:
-                    st.markdown(status_html(stat_b), unsafe_allow_html=True)
-                with col_edit_b:
-                    if st.button("✏️", key=f"edit_bgr_{id_b}", help="Editar"):
-                        st.session_state["modo_bgr"]         = "edicao"
-                        st.session_state["editando_bgr"]      = id_b
-                        st.session_state["expandir_form_bgr"] = True
-                        st.rerun()
-                with col_del_b:
-                    if st.button("🗑️", key=f"del_bgr_{id_b}", help="Excluir"):
-                        st.session_state[f"popup_del_bgr_{id_b}"] = True
-
-                if st.session_state.get(f"popup_del_bgr_{id_b}", False):
-                    st.warning(f"⚠️ Confirmar exclusão de **{nome_b}**?")
-                    col_sb, col_nb, _ = st.columns([1, 1, 6])
-                    with col_sb:
+                if st.session_state.get(f"popup_bgr_{id_b}", False):
+                    st.warning(f"⚠️ Excluir **{nome_b}**?")
+                    csb, cnb, _ = st.columns([1, 1, 7])
+                    with csb:
                         if st.button("✅ Sim", key=f"sim_bgr_{id_b}"):
                             adicionar_lixeira("modelos_bgr", row_b.to_dict())
                             excluir_registro("modelos_bgr", id_b)
-                            registrar_auditoria("EXCLUSÃO", "modelos_bgr", f"BGR excluído: {nome_b}", dados_antes=str(row_b.to_dict()))
-                            st.session_state.pop(f"popup_del_bgr_{id_b}", None)
+                            registrar_auditoria("EXCLUSÃO", "modelos_bgr", f"BGR excluído: {nome_b}", str(row_b.to_dict()))
+                            st.session_state.pop(f"popup_bgr_{id_b}", None)
                             st.rerun()
-                    with col_nb:
+                    with cnb:
                         if st.button("❌ Não", key=f"nao_bgr_{id_b}"):
-                            st.session_state.pop(f"popup_del_bgr_{id_b}", None)
+                            st.session_state.pop(f"popup_bgr_{id_b}", None)
                             st.rerun()
 
             if modo_sel_bgr and ids_sel_bgr:
-                st.write("")
                 st.error(f"⚠️ {len(ids_sel_bgr)} item(s) selecionado(s).")
                 if st.button("🗑️ Excluir selecionados", key="btn_lote_bgr"):
                     st.session_state["popup_lote_bgr"] = True
 
-            if st.session_state.get("popup_lote_bgr", False) and ids_sel_bgr:
-                nomes_lote_b = df_bgr_lista[df_bgr_lista["id"].isin(ids_sel_bgr)]["nome"].tolist()
-                st.warning(f"⚠️ Confirmar exclusão de: **{', '.join(nomes_lote_b)}**?")
-                col_slb, col_nlb, _ = st.columns([1, 1, 6])
-                with col_slb:
+            if st.session_state.get("popup_lote_bgr") and ids_sel_bgr:
+                nomes_lb = df_bgr[df_bgr["id"].isin(ids_sel_bgr)]["nome"].tolist()
+                st.warning(f"⚠️ Confirmar exclusão de: **{', '.join(nomes_lb)}**?")
+                cslb, cnlb, _ = st.columns([1, 1, 7])
+                with cslb:
                     if st.button("✅ Confirmar", key="conf_lote_bgr"):
                         for id_lb in ids_sel_bgr:
-                            r_b = df_bgr_lista[df_bgr_lista["id"] == id_lb].iloc[0]
+                            r_b = df_bgr[df_bgr["id"] == id_lb].iloc[0]
                             adicionar_lixeira("modelos_bgr", r_b.to_dict())
                             excluir_registro("modelos_bgr", id_lb)
-                        registrar_auditoria("EXCLUSÃO EM LOTE", "modelos_bgr", f"Excluídos: {', '.join(nomes_lote_b)}")
+                        registrar_auditoria("EXCLUSÃO EM LOTE", "modelos_bgr", f"Excluídos: {', '.join(nomes_lb)}")
                         st.session_state.pop("popup_lote_bgr", None)
-                        st.success("Itens excluídos!")
+                        st.success("Excluídos!")
                         st.rerun()
-                with col_nlb:
+                with cnlb:
                     if st.button("❌ Cancelar", key="canc_lote_bgr"):
                         st.session_state.pop("popup_lote_bgr", None)
                         st.rerun()
 
     # =====================================================
-    # ABA 3 — SOLICITAÇÕES BGR
+    # ABA 3 — SOLICITAÇÕES
     # =====================================================
 
     with aba3:
         st.subheader("📥 Solicitações de acesso aos BGR")
-
         df_sol = carregar_tabela("solicitacoes_bgr")
 
         if df_sol.empty:
-            st.info("Nenhuma solicitação registrada ainda.")
+            st.info("Nenhuma solicitação registrada.")
         else:
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                filtro_dep_sol = st.selectbox("Filtrar departamento:", ["Todos"] + DEPARTAMENTOS, key="sol_dep_admin")
-            with col2:
-                busca_cnpj = st.text_input("Buscar CNPJ:", key="sol_cnpj_admin")
-            with col3:
-                busca_email = st.text_input("Buscar e-mail:", key="sol_email_admin")
+            s1, s2, s3 = st.columns(3)
+            with s1:
+                fdep_sol = st.selectbox("Departamento:", ["Todos"] + DEPARTAMENTOS, key="fdep_sol")
+            with s2:
+                busca_cnpj = st.text_input("CNPJ:", key="busca_cnpj_sol")
+            with s3:
+                busca_email_sol = st.text_input("E-mail:", key="busca_email_sol")
 
             df_sol_f = df_sol.copy()
-            if filtro_dep_sol != "Todos":
-                df_sol_f = df_sol_f[df_sol_f["departamento"] == filtro_dep_sol]
+            if fdep_sol != "Todos":
+                df_sol_f = df_sol_f[df_sol_f["departamento"] == fdep_sol]
             if busca_cnpj:
                 df_sol_f = df_sol_f[df_sol_f["cnpj"].astype(str).str.contains(busca_cnpj, case=False, na=False)]
-            if busca_email:
-                df_sol_f = df_sol_f[df_sol_f["email_usuario"].astype(str).str.contains(busca_email, case=False, na=False)]
+            if busca_email_sol:
+                df_sol_f = df_sol_f[df_sol_f["email_usuario"].astype(str).str.contains(busca_email_sol, case=False, na=False)]
 
             st.dataframe(df_sol_f, use_container_width=True)
 
             excel_sol = gerar_excel_download({"Solicitacoes_BGR": df_sol_f})
-            st.download_button(
-                label="📥 Exportar solicitações para Excel",
-                data=excel_sol,
-                file_name="solicitacoes_bgr.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_sol"
-            )
+            st.download_button("📥 Exportar para Excel", data=excel_sol, file_name="solicitacoes_bgr.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="dl_sol")
 
     # =====================================================
     # ABA 4 — EXPORTAÇÕES
@@ -1032,34 +1072,28 @@ elif pagina == "Painel Administrativo":
 
     with aba4:
         st.subheader("📦 Exportar bases para Excel")
-        st.info("Clique no botão abaixo para gerar e baixar o arquivo. A auditoria será registrada somente ao clicar.")
+        st.info("A auditoria é registrada somente ao clicar no botão abaixo.")
 
-        df_exp_conv = carregar_tabela("conversores")
-        df_exp_bgr  = carregar_tabela("modelos_bgr")
-        df_exp_sol  = carregar_tabela("solicitacoes_bgr")
-        df_exp_aud  = carregar_tabela("auditoria")
+        df_ec = carregar_tabela("conversores")
+        df_eb = carregar_tabela("modelos_bgr")
+        df_es = carregar_tabela("solicitacoes_bgr")
+        df_ea = carregar_tabela("auditoria")
 
-        excel_completo = gerar_excel_download({
-            "Conversores":      df_exp_conv,
-            "Modelos_BGR":      df_exp_bgr,
-            "Solicitacoes_BGR": df_exp_sol,
-            "Auditoria":        df_exp_aud
+        excel_all = gerar_excel_download({
+            "Conversores": df_ec, "Modelos_BGR": df_eb,
+            "Solicitacoes_BGR": df_es, "Auditoria": df_ea
         })
 
-        # ✅ CORREÇÃO: usar st.button para registrar auditoria SOMENTE ao clicar
-        if st.button("📥 Baixar todas as bases em Excel", key="btn_exportar_tudo"):
+        if st.button("📥 Gerar Excel completo", key="btn_gerar_excel"):
             registrar_auditoria("EXPORTAÇÃO", "todas", "Exportação completa das bases para Excel")
-            st.session_state["excel_pronto"] = excel_completo
-            st.success("Arquivo gerado! Clique em Download abaixo.")
+            st.session_state["excel_pronto"] = excel_all
+            st.success("Pronto! Clique em Download abaixo.")
 
         if st.session_state.get("excel_pronto") is not None:
-            st.download_button(
-                label="⬇️ Download Excel",
-                data=st.session_state["excel_pronto"],
+            st.download_button("⬇️ Download Excel", data=st.session_state["excel_pronto"],
                 file_name="bases_portal_ferramentas.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_excel_completo"
-            )
+                key="dl_excel_all")
 
     # =====================================================
     # ABA 5 — AUDITORIA
@@ -1067,45 +1101,30 @@ elif pagina == "Painel Administrativo":
 
     with aba5:
         st.subheader("🔍 Auditoria de Movimentações")
+        df_aud = carregar_tabela("auditoria")
 
-        df_audit = carregar_tabela("auditoria")
-
-        if df_audit.empty:
-            st.info("Nenhuma movimentação registrada ainda.")
+        if df_aud.empty:
+            st.info("Nenhuma movimentação registrada.")
         else:
-            col_a1, col_a2, col_a3 = st.columns(3)
-            with col_a1:
-                filtro_acao = st.selectbox(
-                    "Filtrar por ação:",
-                    ["Todas", "CADASTRO", "UPLOAD", "EDIÇÃO", "EXCLUSÃO", "EXCLUSÃO EM LOTE", "RESTAURAÇÃO", "EXPORTAÇÃO"],
-                    key="audit_acao"
-                )
-            with col_a2:
-                filtro_tab_aud = st.selectbox(
-                    "Filtrar por tabela:",
-                    ["Todas", "conversores", "modelos_bgr", "solicitacoes_bgr", "todas"],
-                    key="audit_tabela"
-                )
-            with col_a3:
-                busca_desc_aud = st.text_input("Buscar na descrição:", key="audit_desc")
+            au1, au2, au3 = st.columns(3)
+            with au1:
+                f_acao = st.selectbox("Ação:", ["Todas","CADASTRO","UPLOAD","EDIÇÃO","EXCLUSÃO","EXCLUSÃO EM LOTE","RESTAURAÇÃO","EXPORTAÇÃO"], key="f_acao_aud")
+            with au2:
+                f_tab_aud = st.selectbox("Tabela:", ["Todas","conversores","modelos_bgr","solicitacoes_bgr","todas"], key="f_tab_aud")
+            with au3:
+                busca_aud = st.text_input("Buscar descrição:", key="busca_aud")
 
-            df_aud_f = df_audit.copy()
-            if filtro_acao != "Todas":
-                df_aud_f = df_aud_f[df_aud_f["acao"] == filtro_acao]
-            if filtro_tab_aud != "Todas":
-                df_aud_f = df_aud_f[df_aud_f["tabela"] == filtro_tab_aud]
-            if busca_desc_aud:
-                df_aud_f = df_aud_f[df_aud_f["descricao"].astype(str).str.contains(busca_desc_aud, case=False, na=False)]
+            df_aud_f = df_aud.copy()
+            if f_acao != "Todas":
+                df_aud_f = df_aud_f[df_aud_f["acao"] == f_acao]
+            if f_tab_aud != "Todas":
+                df_aud_f = df_aud_f[df_aud_f["tabela"] == f_tab_aud]
+            if busca_aud:
+                df_aud_f = df_aud_f[df_aud_f["descricao"].astype(str).str.contains(busca_aud, case=False, na=False)]
 
-            st.write(f"**{len(df_aud_f)} registro(s) encontrado(s)**")
+            st.caption(f"{len(df_aud_f)} registro(s)")
             st.dataframe(df_aud_f, use_container_width=True)
 
-            st.write("---")
             excel_aud = gerar_excel_download({"Auditoria": df_aud_f})
-            st.download_button(
-                label="📥 Exportar auditoria para Excel",
-                data=excel_aud,
-                file_name="auditoria_portal_ferramentas.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_auditoria"
-            )
+            st.download_button("📥 Exportar auditoria", data=excel_aud, file_name="auditoria.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="dl_aud")
