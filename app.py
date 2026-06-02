@@ -397,30 +397,21 @@ def email_valido(email):
 # =========================================================
 
 def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
-    """
-    Renderiza a lista pública no formato:
-      [Nome] [Descrição] [Departamento] [Detalhamento] [Status] [Botão]
-
-    Cada linha é um st.expander; ao expandir, exibe os detalhes completos.
-    O botão de acesso fica na coluna da direita, alinhado verticalmente.
-    """
-
     if df_filtrado.empty:
         st.info("Nenhum item encontrado para os filtros selecionados.")
         return
 
     st.caption(f"{len(df_filtrado)} item(s) encontrado(s)")
 
-    # Cabeçalho visual das colunas
-    st.markdown("""
-    <div class="lista-header">
-        <span>Nome</span>
-        <span>Descrição</span>
-        <span>Departamento</span>
-        <span>Detalhamento</span>
-        <span style="text-align:center">Status / Acesso</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # ── Cabeçalho fixo com st.columns reais ──
+    h0, h1, h2, h3, h4, h5 = st.columns([3, 2.5, 2, 2, 1.5, 1.4])
+    h0.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Nome</span>", unsafe_allow_html=True)
+    h1.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Descrição</span>", unsafe_allow_html=True)
+    h2.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Departamento</span>", unsafe_allow_html=True)
+    h3.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Detalhamento</span>", unsafe_allow_html=True)
+    h4.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Status</span>", unsafe_allow_html=True)
+    h5.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Acesso</span>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:4px 0 6px 0;border-color:#333'>", unsafe_allow_html=True)
 
     for idx, row in df_filtrado.iterrows():
         nome_i  = valor_texto(row.get("nome", ""))
@@ -428,27 +419,49 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
         desc_i  = valor_texto(row.get("descricao", ""))
         stat_i  = valor_texto(row.get("status", ""))
         url_i   = valor_texto(row.get("url", ""))
-        det_i   = valor_texto(row.get("detalhamento", ""))   # campo extra opcional
+        det_i   = valor_texto(row.get("detalhamento", ""))
         img_i   = valor_texto(row.get("imagem", ""))
         bgr_i   = valor_texto(row.get("arquivo_bgr", ""))
         data_i  = valor_texto(row.get("data_cadastro", row.get("data_upload", "")))
 
-        # Trunca textos longos para a linha resumida
-        desc_curta = (desc_i[:55] + "…") if len(desc_i) > 55 else desc_i
-        det_curto  = (det_i[:45]  + "…") if len(det_i)  > 45 else det_i
+        desc_curta = (desc_i[:40] + "…") if len(desc_i) > 40 else desc_i
+        det_curto  = (det_i[:35]  + "…") if len(det_i)  > 35 else (det_i if det_i else "—")
 
-        # Linha: col_expander (grande) + col_botao (pequena fixa)
-        col_exp, col_btn = st.columns([11, 1.4])
+        # ── Linha com colunas perfeitamente alinhadas ──
+        c0, c1, c2, c3, c4, c5 = st.columns([3, 2.5, 2, 2, 1.5, 1.4])
 
-        with col_exp:
-            # Label do expander usa apenas texto puro — sem HTML
-            label_exp = (
-                f"{nome_i}   |   {desc_curta}   |   {dep_i}"
-                f"   |   {det_curto if det_curto else '—'}"
-                f"   |   {badge_status(stat_i)}"
-            )
-            with st.expander(label_exp, expanded=False):
-                # Detalhes internos — aqui pode usar HTML
+        with c0:
+            st.markdown(f"<span style='font-weight:700;color:#F5F5F5;font-size:13px'>{nome_i}</span>", unsafe_allow_html=True)
+        with c1:
+            st.markdown(f"<span style='color:#A8A8A8;font-size:12px'>{desc_curta}</span>", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"<span style='color:#D0D0D0;font-size:12px'>{dep_i}</span>", unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"<span style='color:#A8A8A8;font-size:12px'>{det_curto}</span>", unsafe_allow_html=True)
+        with c4:
+            st.markdown(status_html(stat_i), unsafe_allow_html=True)
+        with c5:
+            if tipo == "conversor":
+                if stat_i == "Ativo" and url_i:
+                    st.markdown(f'<a class="botao-link" href="{url_i}" target="_blank">🔗 Acessar</a>', unsafe_allow_html=True)
+                elif stat_i == "Em manutenção":
+                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
+            else:
+                if bgr_i:
+                    st.markdown('<span class="status-ativo">📄 BGR</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<span class="status-desenvolvimento">📄 Sem arq.</span>', unsafe_allow_html=True)
+
+        # ── Linha de expansão de detalhes — separada, abaixo da linha ──
+        chave_exp = f"expandido_{tipo}_{idx}"
+        if st.session_state.get(chave_exp, False):
+            with st.container():
+                st.markdown(
+                    "<div style='background:#1F1F1F;border:1px solid #FF8000;border-radius:10px;padding:18px 22px;margin-bottom:8px'>",
+                    unsafe_allow_html=True
+                )
                 d1, d2 = st.columns([3, 1])
                 with d1:
                     st.markdown(f"**Nome:** {nome_i}")
@@ -456,35 +469,29 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
                     st.markdown(f"**Departamento:** {dep_i}")
                     if det_i:
                         st.markdown(f"**Detalhamento:** {det_i}")
-                    st.markdown(
-                        f"**Status:** {status_html(stat_i)}",
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(f"**Status:** {status_html(stat_i)}", unsafe_allow_html=True)
                     if data_i:
                         st.markdown(f"**Data de cadastro:** {data_i}")
-
-                    # Aviso de status
                     if stat_i == "Em manutenção":
                         st.warning("Esta ferramenta está temporariamente em manutenção.")
                     elif stat_i == "Em desenvolvimento":
                         st.info("Esta ferramenta está em desenvolvimento.")
-
                 with d2:
                     if img_i:
                         iu = url_publica(BUCKET_IMAGENS, img_i)
                         if iu:
                             st.image(iu, caption="Prévia", use_container_width=True)
 
-                # Formulário BGR (somente para Relatórios BGR)
+                # Formulário BGR
                 if tipo == "bgr" and bgr_i:
                     st.write("---")
                     st.markdown("**Preencha os dados para liberar o download:**")
                     with st.form(f"form_bgr_pub_{idx}"):
                         fc1, fc2 = st.columns(2)
                         with fc1:
-                            nome_u  = st.text_input("Nome",  key=f"bgr_nome_{idx}")
+                            nome_u  = st.text_input("Nome",   key=f"bgr_nome_{idx}")
                             email_u = st.text_input("E-mail", key=f"bgr_email_{idx}")
-                            cnpj_u  = st.text_input("CNPJ",  key=f"bgr_cnpj_{idx}")
+                            cnpj_u  = st.text_input("CNPJ",   key=f"bgr_cnpj_{idx}")
                         with fc2:
                             cod_u = st.text_input("Código cliente Domínio", key=f"bgr_cod_{idx}")
                             obs_u = st.text_area("Observações", key=f"bgr_obs_{idx}", height=90)
@@ -525,25 +532,15 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
                                 key=f"dl_bgr_pub_{idx}"
                             )
 
-        with col_btn:
-            # Botão de acesso alinhado verticalmente ao centro da linha
-            st.write("")   # espaço para alinhar com o expander
-            if tipo == "conversor":
-                if stat_i == "Ativo" and url_i:
-                    st.markdown(
-                        f'<a class="botao-link" href="{url_i}" target="_blank">🔗 Acessar</a>',
-                        unsafe_allow_html=True
-                    )
-                elif stat_i == "Em manutenção":
-                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
-            else:
-                if bgr_i:
-                    st.markdown('<span class="status-ativo">📄 BGR</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<span class="status-desenvolvimento">📄 Sem arq.</span>', unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
+        # Botão Ver detalhes / Fechar — centralizado abaixo da linha
+        btn_label = "▲ Fechar" if st.session_state.get(chave_exp, False) else "▼ Ver detalhes"
+        if st.button(btn_label, key=f"btn_exp_{tipo}_{idx}", use_container_width=True):
+            st.session_state[chave_exp] = not st.session_state.get(chave_exp, False)
+            st.rerun()
+
+        st.markdown("<hr style='margin:2px 0 2px 0;border-color:#2a2a2a'>", unsafe_allow_html=True)
 
 # =========================================================
 # INICIALIZAÇÃO
