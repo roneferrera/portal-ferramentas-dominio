@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import unicodedata
+import re
 from datetime import datetime
 from io import BytesIO
 from supabase import create_client, Client
@@ -123,9 +125,10 @@ a:hover { color: var(--tr-orange-dark); }
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(
-    "https://hylhbsrckmygluiykdur.supabase.co",
-    st.secrets["SUPABASE_KEY"]
-)
+        "https://hylhbsrckmygluiykdur.supabase.co",
+        st.secrets["SUPABASE_KEY"]
+    )
+
 # =========================================================
 # SUPABASE — BANCO DE DADOS
 # =========================================================
@@ -276,15 +279,15 @@ def mostrar_logo():
     st.sidebar.markdown("### 🧩 Portal de Ferramentas")
 
 
-def nome_arquivo_seguro(nome_arquivo):
-    return (
-        nome_arquivo
-        .replace(" ", "_")
-        .replace("/", "_")
-        .replace("\\", "_")
-        .replace(":", "_")
-        .replace(";", "_")
-    )
+# ✅ FUNÇÃO CORRIGIDA — remove acentos e caracteres especiais
+def nome_arquivo_seguro(nome_arquivo: str) -> str:
+    nome = unicodedata.normalize("NFKD", nome_arquivo)
+    nome = "".join(c for c in nome if not unicodedata.combining(c))
+    nome = re.sub(r"[^\w\.\-]", "_", nome)
+    partes = nome.rsplit(".", 1)
+    if len(partes) == 2:
+        nome = partes[0].replace(".", "_") + "." + partes[1]
+    return nome
 
 
 def valor_texto(valor):
