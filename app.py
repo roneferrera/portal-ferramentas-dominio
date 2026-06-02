@@ -123,10 +123,9 @@ a:hover { color: var(--tr-orange-dark); }
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(
-        "https://vmqzxlorakaivjluvsze.supabase.co",
-        st.secrets["SUPABASE_KEY"]
-    )
-
+    "https://hylhbsrckmygluiykdur.supabase.co",
+    st.secrets["SUPABASE_KEY"]
+)
 # =========================================================
 # SUPABASE — BANCO DE DADOS
 # =========================================================
