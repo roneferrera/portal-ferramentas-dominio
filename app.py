@@ -35,7 +35,7 @@ STATUS_FERRAMENTAS = [
 ]
 
 BUCKET_IMAGENS = "imagens-bgr"
-BUCKET_BGR     = "arquivos-bgr"
+BUCKET_BGR = "arquivos-bgr"
 
 # =========================================================
 # ESTILO VISUAL
@@ -66,115 +66,350 @@ st.markdown("""
     --tr-danger-bg: rgba(211, 47, 47, 0.22);
     --tr-danger-text: #EF9A9A;
 }
-.stApp { background-color: var(--tr-bg-main); color: var(--tr-text-main); }
-.block-container { padding-top: 1.5rem; padding-bottom: 3rem; }
-html, body, [class*="css"] { font-family: Arial, Helvetica, sans-serif; }
-p, span, label, div { color: var(--tr-text-secondary); }
-h1 { color: var(--tr-text-main); font-weight: 700; border-left: 6px solid var(--tr-orange); padding-left: 14px; }
-h2, h3, h4 { color: var(--tr-text-main); }
-section[data-testid="stSidebar"] { background-color: var(--tr-bg-sidebar); border-right: 1px solid var(--tr-border); }
+
+.stApp {
+    background-color: var(--tr-bg-main);
+    color: var(--tr-text-main);
+}
+
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+}
+
+html, body, [class*="css"] {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+p, span, label, div {
+    color: var(--tr-text-secondary);
+}
+
+h1 {
+    color: var(--tr-text-main);
+    font-weight: 700;
+    border-left: 6px solid var(--tr-orange);
+    padding-left: 14px;
+}
+
+h2, h3, h4 {
+    color: var(--tr-text-main);
+}
+
+section[data-testid="stSidebar"] {
+    background-color: var(--tr-bg-sidebar);
+    border-right: 1px solid var(--tr-border);
+}
+
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] div { color: var(--tr-text-secondary); }
-section[data-testid="stSidebar"] hr { border-color: var(--tr-border); }
-.botao-link {
-    display: inline-block; background-color: var(--tr-orange);
-    color: #FFFFFF !important; padding: 7px 16px; border-radius: 8px;
-    text-decoration: none; font-weight: 700; font-size: 13px; white-space: nowrap;
+section[data-testid="stSidebar"] div {
+    color: var(--tr-text-secondary);
 }
-.botao-link:hover { background-color: var(--tr-orange-dark); color: #FFFFFF !important; }
-.stButton > button, .stDownloadButton > button {
-    background-color: var(--tr-orange); color: #FFFFFF;
-    border: 1px solid var(--tr-orange); border-radius: 8px; font-weight: 700;
-}
-.stButton > button:hover, .stDownloadButton > button:hover {
-    background-color: var(--tr-orange-dark); color: #FFFFFF; border-color: var(--tr-orange-dark);
-}
-.stTextInput input, .stTextArea textarea {
-    background-color: var(--tr-bg-input); color: var(--tr-text-main);
-    border: 1px solid var(--tr-border-light); border-radius: 8px;
-}
-.stTextInput input::placeholder, .stTextArea textarea::placeholder { color: var(--tr-text-muted); }
-.stTextInput input:focus, .stTextArea textarea:focus {
-    border-color: var(--tr-orange) !important; box-shadow: 0 0 0 1px var(--tr-orange) !important;
-}
-.stSelectbox div[data-baseweb="select"] {
-    background-color: var(--tr-bg-input); color: var(--tr-text-main); border-radius: 8px;
-}
-.stRadio label, .stCheckbox label { color: var(--tr-text-secondary); }
-.status-ativo {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    background-color: var(--tr-success-bg); color: var(--tr-success-text); font-weight: 700; font-size: 12px;
-}
-.status-manutencao {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    background-color: var(--tr-warning-bg); color: var(--tr-warning-text); font-weight: 700; font-size: 12px;
-}
-.status-desenvolvimento {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    background-color: var(--tr-info-bg); color: var(--tr-info-text); font-weight: 700; font-size: 12px;
-}
-.setor-card {
-    padding: 22px; border-radius: 14px; background-color: var(--tr-bg-card);
-    border: 1px solid var(--tr-border); text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35); min-height: 140px; transition: all 0.2s ease-in-out;
-}
-.setor-card:hover {
-    background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange);
-    transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,128,0,0.18);
-}
-.setor-card h1 { border-left: none; padding-left: 0; color: var(--tr-orange); }
-.setor-card h4 { color: var(--tr-text-main); margin-bottom: 4px; }
-.setor-card p  { color: var(--tr-text-muted); }
-.aviso-admin {
-    padding: 14px; border-radius: 10px;
-    background-color: var(--tr-warning-bg); color: var(--tr-warning-text); border: 1px solid var(--tr-orange);
-}
-.aviso-admin strong { color: var(--tr-warning-text); }
-[data-testid="stMetric"] {
-    background-color: var(--tr-bg-card); border: 1px solid var(--tr-border);
-    border-radius: 14px; padding: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-}
-[data-testid="stMetricLabel"] { color: var(--tr-text-muted); }
-[data-testid="stMetricValue"] { color: var(--tr-orange); font-weight: 700; }
-.stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid var(--tr-border); }
-.stTabs [data-baseweb="tab"] {
-    background-color: var(--tr-bg-card); border-radius: 8px 8px 0 0;
-    color: var(--tr-text-secondary); border: 1px solid var(--tr-border); padding: 10px 16px;
-}
-.stTabs [aria-selected="true"] {
-    background-color: var(--tr-orange-soft); color: var(--tr-orange);
-    border-bottom: 3px solid var(--tr-orange); font-weight: 700;
-}
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--tr-border); border-radius: 10px; background-color: var(--tr-bg-card);
-}
-div[data-testid="stAlert"]   { border-radius: 10px; border: 1px solid var(--tr-border); }
-div[data-testid="stExpander"]{ background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); border-radius: 10px; }
-[data-testid="stFileUploader"] {
-    background-color: var(--tr-bg-card); border: 1px dashed var(--tr-border-light);
-    border-radius: 12px; padding: 12px;
-}
-hr { border-color: var(--tr-border); }
-a  { color: var(--tr-orange); }
-a:hover { color: var(--tr-orange-dark); }
-.lixeira-restaurar {
-    padding: 12px 16px; border-radius: 10px;
-    background-color: var(--tr-danger-bg); border: 1px solid #c62828; margin-bottom: 10px;
-}
-.lixeira-restaurar strong { color: var(--tr-danger-text); }
 
-/* ── Botão ➕/➖ compacto ── */
+section[data-testid="stSidebar"] hr {
+    border-color: var(--tr-border);
+}
+
+.botao-link {
+    display: inline-block;
+    background-color: var(--tr-orange);
+    color: #FFFFFF !important;
+    padding: 7px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.botao-link:hover {
+    background-color: var(--tr-orange-dark);
+    color: #FFFFFF !important;
+}
+
+.stButton > button,
+.stDownloadButton > button {
+    background-color: var(--tr-orange);
+    color: #FFFFFF;
+    border: 1px solid var(--tr-orange);
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    background-color: var(--tr-orange-dark);
+    color: #FFFFFF;
+    border-color: var(--tr-orange-dark);
+}
+
+.stTextInput input,
+.stTextArea textarea {
+    background-color: var(--tr-bg-input);
+    color: var(--tr-text-main);
+    border: 1px solid var(--tr-border-light);
+    border-radius: 8px;
+}
+
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: var(--tr-text-muted);
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--tr-orange) !important;
+    box-shadow: 0 0 0 1px var(--tr-orange) !important;
+}
+
+.stSelectbox div[data-baseweb="select"] {
+    background-color: var(--tr-bg-input);
+    color: var(--tr-text-main);
+    border-radius: 8px;
+}
+
+.stRadio label,
+.stCheckbox label {
+    color: var(--tr-text-secondary);
+}
+
+.status-ativo {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background-color: var(--tr-success-bg);
+    color: var(--tr-success-text);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.status-manutencao {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background-color: var(--tr-warning-bg);
+    color: var(--tr-warning-text);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.status-desenvolvimento {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background-color: var(--tr-info-bg);
+    color: var(--tr-info-text);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.setor-card {
+    padding: 22px;
+    border-radius: 14px;
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    min-height: 140px;
+    transition: all 0.2s ease-in-out;
+}
+
+.setor-card:hover {
+    background-color: var(--tr-bg-card-hover);
+    border-color: var(--tr-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
+}
+
+.setor-card h1 {
+    border-left: none;
+    padding-left: 0;
+    color: var(--tr-orange);
+}
+
+.setor-card h4 {
+    color: var(--tr-text-main);
+    margin-bottom: 4px;
+}
+
+.setor-card p {
+    color: var(--tr-text-muted);
+}
+
+.aviso-admin {
+    padding: 14px;
+    border-radius: 10px;
+    background-color: var(--tr-warning-bg);
+    color: var(--tr-warning-text);
+    border: 1px solid var(--tr-orange);
+}
+
+.aviso-admin strong {
+    color: var(--tr-warning-text);
+}
+
+[data-testid="stMetric"] {
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--tr-text-muted);
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--tr-orange);
+    font-weight: 700;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    border-bottom: 1px solid var(--tr-border);
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: var(--tr-bg-card);
+    border-radius: 8px 8px 0 0;
+    color: var(--tr-text-secondary);
+    border: 1px solid var(--tr-border);
+    padding: 10px 16px;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: var(--tr-orange-soft);
+    color: var(--tr-orange);
+    border-bottom: 3px solid var(--tr-orange);
+    font-weight: 700;
+}
+
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--tr-border);
+    border-radius: 10px;
+    background-color: var(--tr-bg-card);
+}
+
+div[data-testid="stAlert"] {
+    border-radius: 10px;
+    border: 1px solid var(--tr-border);
+}
+
+div[data-testid="stExpander"] {
+    background-color: var(--tr-bg-card);
+    border: 1px solid var(--tr-border);
+    border-radius: 10px;
+}
+
+[data-testid="stFileUploader"] {
+    background-color: var(--tr-bg-card);
+    border: 1px dashed var(--tr-border-light);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+hr {
+    border-color: var(--tr-border);
+}
+
+a {
+    color: var(--tr-orange);
+}
+
+a:hover {
+    color: var(--tr-orange-dark);
+}
+
+.lixeira-restaurar {
+    padding: 12px 16px;
+    border-radius: 10px;
+    background-color: var(--tr-danger-bg);
+    border: 1px solid #c62828;
+    margin-bottom: 10px;
+}
+
+.lixeira-restaurar strong {
+    color: var(--tr-danger-text);
+}
+
+/* Botão ➕/➖ compacto */
 div[data-testid="stButton"] button[kind="secondary"] {
     padding: 2px 8px !important;
     font-size: 16px !important;
     line-height: 1 !important;
     min-height: unset !important;
     border-radius: 6px !important;
+}
+
+/* =====================================================
+   MODO SELEÇÃO OTIMIZADO
+   ===================================================== */
+
+.sel-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+}
+
+.sel-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #F5F5F5;
+    margin-bottom: 2px;
+}
+
+.sel-subtitle {
+    font-size: 12px;
+    color: #A8A8A8;
+}
+
+.sel-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 128, 0, 0.16);
+    border: 1px solid rgba(255, 128, 0, 0.45);
+    color: #FFB366;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.sel-tip {
+    padding-top: 7px;
+    font-size: 12px;
+    color: #A8A8A8;
+}
+
+.sel-ok {
+    padding-top: 7px;
+    font-size: 12px;
+    color: #81C784;
+    font-weight: 700;
+}
+
+.row-selected-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255, 128, 0, 0.16);
+    color: #FFB366;
+    border: 1px solid rgba(255, 128, 0, 0.45);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+div[data-testid="stButton"] button {
+    white-space: nowrap;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -228,9 +463,10 @@ def excluir_registro(tabela: str, id_registro: int):
 def upload_arquivo(bucket, nome, dados_bytes, content_type):
     try:
         sb = get_supabase()
+
         try:
             sb.storage.from_(bucket).remove([nome])
-        except:
+        except Exception:
             pass
 
         sb.storage.from_(bucket).upload(
@@ -240,6 +476,7 @@ def upload_arquivo(bucket, nome, dados_bytes, content_type):
         )
 
         return sb.storage.from_(bucket).get_public_url(nome)
+
     except Exception as e:
         st.error(f"Erro no upload: {e}")
         return None
@@ -247,13 +484,13 @@ def upload_arquivo(bucket, nome, dados_bytes, content_type):
 def baixar_arquivo(bucket, nome):
     try:
         return get_supabase().storage.from_(bucket).download(nome)
-    except:
+    except Exception:
         return None
 
 def url_publica(bucket, nome):
     try:
         return get_supabase().storage.from_(bucket).get_public_url(nome)
-    except:
+    except Exception:
         return ""
 
 # =========================================================
@@ -263,10 +500,10 @@ def url_publica(bucket, nome):
 def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""):
     try:
         inserir_registro("auditoria", {
-            "data_hora":   datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "acao":        acao,
-            "tabela":      tabela,
-            "descricao":   descricao,
+            "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "acao": acao,
+            "tabela": tabela,
+            "descricao": descricao,
             "dados_antes": dados_antes,
             "dados_depois": dados_depois
         })
@@ -381,6 +618,7 @@ def status_html(status):
         return '<span class="status-ativo">● Ativo</span>'
     elif status == "Em manutenção":
         return '<span class="status-manutencao">⚙ Em manutenção</span>'
+
     return '<span class="status-desenvolvimento">🔧 Em desenvolvimento</span>'
 
 def gerar_excel_download(dfs: dict):
@@ -417,14 +655,14 @@ def email_valido(email):
     return "@" in str(email).strip() and "." in str(email).strip()
 
 # =========================================================
-# SELEÇÃO MÚLTIPLA — AJUSTADO
+# SELEÇÃO MÚLTIPLA — CORRIGIDA E OTIMIZADA
 # =========================================================
 
 def inicializar_selecao(key):
     if key not in st.session_state or not isinstance(st.session_state[key], set):
         try:
             st.session_state[key] = set(st.session_state.get(key, []))
-        except:
+        except Exception:
             st.session_state[key] = set()
 
 def _atualizar_checkboxes_por_prefixo(prefixo_chk, valor=False):
@@ -433,41 +671,144 @@ def _atualizar_checkboxes_por_prefixo(prefixo_chk, valor=False):
 
     for k in list(st.session_state.keys()):
         if str(k).startswith(prefixo_chk):
-            st.session_state[k] = valor
+            st.session_state[k] = bool(valor)
 
 def limpar_selecao(key, prefixo_chk=None):
+    inicializar_selecao(key)
     st.session_state[key] = set()
     _atualizar_checkboxes_por_prefixo(prefixo_chk, False)
 
 def selecionar_todos_filtrados(key, df_filtrado, prefixo_chk=None):
     inicializar_selecao(key)
 
-    _atualizar_checkboxes_por_prefixo(prefixo_chk, False)
+    ids = set()
 
     if df_filtrado is not None and not df_filtrado.empty and "id" in df_filtrado.columns:
-        ids = set(df_filtrado["id"].astype(int).tolist())
-        st.session_state[key] = ids
+        ids = set(df_filtrado["id"].dropna().astype(int).tolist())
 
-        if prefixo_chk:
-            for id_item in ids:
-                st.session_state[f"{prefixo_chk}{int(id_item)}"] = True
-    else:
-        st.session_state[key] = set()
+    st.session_state[key] = ids
+
+    _atualizar_checkboxes_por_prefixo(prefixo_chk, False)
+
+    if prefixo_chk:
+        for id_item in ids:
+            st.session_state[f"{prefixo_chk}{int(id_item)}"] = True
 
 def sincronizar_checkbox_selecao(key_ids, key_checkbox, id_item):
     inicializar_selecao(key_ids)
 
+    id_item = int(id_item)
+
     if st.session_state.get(key_checkbox, False):
-        st.session_state[key_ids].add(int(id_item))
+        st.session_state[key_ids].add(id_item)
     else:
-        st.session_state[key_ids].discard(int(id_item))
+        st.session_state[key_ids].discard(id_item)
+
+def checkbox_linha_selecao(key_ids, prefixo_chk, id_item):
+    inicializar_selecao(key_ids)
+
+    id_item = int(id_item)
+    key_checkbox = f"{prefixo_chk}{id_item}"
+
+    # Mantém o checkbox visual sincronizado com o set de IDs.
+    st.session_state[key_checkbox] = id_item in st.session_state[key_ids]
+
+    st.checkbox(
+        "Selecionar",
+        key=key_checkbox,
+        label_visibility="collapsed",
+        on_change=sincronizar_checkbox_selecao,
+        args=(key_ids, key_checkbox, id_item),
+        help="Selecionar para ação em lote"
+    )
+
+    return st.session_state.get(key_checkbox, False)
+
+def controle_modo_selecao(label, key, help_text):
+    if hasattr(st, "toggle"):
+        return st.toggle(label, key=key, help=help_text)
+
+    return st.checkbox(label, key=key, help=help_text)
+
+def container_com_borda():
+    try:
+        return st.container(border=True)
+    except TypeError:
+        return st.container()
+
+def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plural):
+    inicializar_selecao(key_ids)
+
+    qtd = len(st.session_state[key_ids])
+    total = 0 if df_filtrado is None else len(df_filtrado)
+
+    with container_com_borda():
+        st.markdown(
+            f"""
+            <div class="sel-top">
+                <div>
+                    <div class="sel-title">☑️ Seleção em lote</div>
+                    <div class="sel-subtitle">
+                        {qtd} de {total} {nome_plural} filtrado(s) selecionado(s)
+                    </div>
+                </div>
+                <div class="sel-pill">{qtd} selecionado(s)</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        b1, b2, b3, b4 = st.columns([1.5, 1.1, 1.2, 3.5])
+
+        with b1:
+            if st.button(
+                "✅ Marcar filtrados",
+                key=f"sel_todos_{sufixo_key}",
+                use_container_width=True
+            ):
+                selecionar_todos_filtrados(key_ids, df_filtrado, prefixo_chk)
+                st.rerun()
+
+        with b2:
+            if st.button(
+                "🧹 Limpar",
+                key=f"limpar_sel_{sufixo_key}",
+                use_container_width=True
+            ):
+                limpar_selecao(key_ids, prefixo_chk)
+                st.session_state.pop(f"popup_lote_{sufixo_key}", None)
+                st.rerun()
+
+        with b3:
+            if st.button(
+                "🗑️ Excluir",
+                key=f"btn_lote_{sufixo_key}",
+                disabled=qtd == 0,
+                use_container_width=True
+            ):
+                st.session_state[f"popup_lote_{sufixo_key}"] = True
+                st.rerun()
+
+        with b4:
+            if qtd > 0:
+                st.markdown(
+                    f"<div class='sel-ok'>Pronto para excluir {qtd} item(ns). A confirmação aparecerá abaixo da lista.</div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    "<div class='sel-tip'>Marque itens individualmente ou use "Marcar filtrados".</div>",
+                    unsafe_allow_html=True
+                )
+
+    return qtd
 
 # =========================================================
 # LISTA PÚBLICA
 # =========================================================
 
 _COLS = [0.7, 2.8, 3.2, 2.0, 1.4, 1.3]
-_CAB  = ["Expandir /\nOcultar", "Nome", "Descrição", "Departamento", "Status", "Acesso"]
+_CAB = ["Expandir /\nOcultar", "Nome", "Descrição", "Departamento", "Status", "Acesso"]
 _CAB_STYLE = "font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em"
 
 def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
@@ -486,12 +827,12 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
 
     for idx, row in df_filtrado.iterrows():
         nome_i = valor_texto(row.get("nome", ""))
-        dep_i  = valor_texto(row.get("departamento", ""))
+        dep_i = valor_texto(row.get("departamento", ""))
         desc_i = valor_texto(row.get("descricao", ""))
         stat_i = valor_texto(row.get("status", ""))
-        url_i  = valor_texto(row.get("url", ""))
-        img_i  = valor_texto(row.get("imagem", ""))
-        bgr_i  = valor_texto(row.get("arquivo_bgr", ""))
+        url_i = valor_texto(row.get("url", ""))
+        img_i = valor_texto(row.get("imagem", ""))
+        bgr_i = valor_texto(row.get("arquivo_bgr", ""))
         data_i = valor_texto(row.get("data_cadastro", row.get("data_upload", "")))
 
         desc_curta = (desc_i[:45] + "…") if len(desc_i) > 45 else desc_i
@@ -589,9 +930,9 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
                     fc1, fc2 = st.columns(2)
 
                     with fc1:
-                        nome_u  = st.text_input("Nome", key=f"bgr_nome_{idx}")
+                        nome_u = st.text_input("Nome", key=f"bgr_nome_{idx}")
                         email_u = st.text_input("E-mail", key=f"bgr_email_{idx}")
-                        cnpj_u  = st.text_input("CNPJ", key=f"bgr_cnpj_{idx}")
+                        cnpj_u = st.text_input("CNPJ", key=f"bgr_cnpj_{idx}")
 
                     with fc2:
                         cod_u = st.text_input("Código cliente Domínio", key=f"bgr_cod_{idx}")
@@ -675,8 +1016,8 @@ if pagina == "Início":
     st.title("🧩 Portal de Ferramentas")
     st.write("Central de conversores, relatórios BGR e ferramentas internas por departamento.")
 
-    df_conversores  = carregar_tabela("conversores")
-    df_modelos      = carregar_tabela("modelos_bgr")
+    df_conversores = carregar_tabela("conversores")
+    df_modelos = carregar_tabela("modelos_bgr")
     df_solicitacoes = carregar_tabela("solicitacoes_bgr")
 
     col1, col2, col3 = st.columns(3)
@@ -844,7 +1185,9 @@ elif pagina == "Painel Administrativo":
         "🔍 Auditoria"
     ])
 
-    # ── ABA 1 — CONVERSORES ──────────────────────────────────────────────────
+    # =====================================================
+    # ABA 1 — CONVERSORES
+    # =====================================================
 
     with aba1:
         st.subheader("🛠️ Gerenciar Conversores")
@@ -897,10 +1240,10 @@ elif pagina == "Painel Administrativo":
             if st.session_state.pop("reset_chk_conv", False):
                 limpar_selecao("ids_sel_conv", "chk_conv_")
 
-            modo_sel_conv = st.checkbox(
-                "☑️ Modo seleção",
+            modo_sel_conv = controle_modo_selecao(
+                "Modo seleção em lote",
                 key="modo_sel_conv",
-                help="Ative para selecionar vários conversores e excluir em lote."
+                help_text="Ative para selecionar vários conversores e excluir em lote."
             )
 
             if not modo_sel_conv:
@@ -908,40 +1251,19 @@ elif pagina == "Painel Administrativo":
                 st.session_state.pop("popup_lote_conv", None)
 
             if modo_sel_conv:
-                qtd_sel_conv = len(st.session_state["ids_sel_conv"])
+                barra_selecao_lote(
+                    key_ids="ids_sel_conv",
+                    df_filtrado=df_conv_f,
+                    prefixo_chk="chk_conv_",
+                    sufixo_key="conv",
+                    nome_plural="conversor(es)"
+                )
 
-                st.markdown("#### Ações em lote")
+                st.markdown("<hr style='margin:14px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
 
-                ac1, ac2, ac3, ac4 = st.columns([2.2, 1.7, 1.6, 2.2])
+                hc = st.columns([0.45, 3.15, 1.8, 1.4, 0.55, 0.55])
 
-                with ac1:
-                    if st.button("✅ Selecionar todos filtrados", key="sel_todos_conv"):
-                        selecionar_todos_filtrados("ids_sel_conv", df_conv_f, "chk_conv_")
-                        st.rerun()
-
-                with ac2:
-                    if st.button("🧹 Limpar seleção", key="limpar_sel_conv"):
-                        limpar_selecao("ids_sel_conv", "chk_conv_")
-                        st.session_state.pop("popup_lote_conv", None)
-                        st.rerun()
-
-                with ac3:
-                    st.metric("Selecionados", qtd_sel_conv)
-
-                with ac4:
-                    if st.button(
-                        "🗑️ Excluir selecionados",
-                        key="btn_lote_conv",
-                        disabled=qtd_sel_conv == 0
-                    ):
-                        st.session_state["popup_lote_conv"] = True
-                        st.rerun()
-
-                st.markdown("<hr style='margin:8px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
-
-                hc = st.columns([0.4, 3.2, 1.8, 1.4, 0.55, 0.55])
-
-                for h, col in zip(["", "Nome", "Departamento", "Status", "", ""], hc):
+                for h, col in zip(["Sel.", "Nome", "Departamento", "Status", "", ""], hc):
                     col.markdown(f"**{h}**")
 
             else:
@@ -952,31 +1274,29 @@ elif pagina == "Painel Administrativo":
 
             st.markdown("<hr style='margin:4px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
 
+            if df_conv_f.empty:
+                st.info("Nenhum conversor encontrado com os filtros selecionados.")
+
             for _, row_c in df_conv_f.iterrows():
-                id_c   = int(row_c["id"])
+                id_c = int(row_c["id"])
                 nome_c = valor_texto(row_c["nome"])
-                dep_c  = valor_texto(row_c["departamento"])
+                dep_c = valor_texto(row_c["departamento"])
                 stat_c = valor_texto(row_c["status"])
 
                 if modo_sel_conv:
-                    cc = st.columns([0.4, 3.2, 1.8, 1.4, 0.55, 0.55])
+                    cc = st.columns([0.45, 3.15, 1.8, 1.4, 0.55, 0.55])
 
                     with cc[0]:
-                        key_chk_conv = f"chk_conv_{id_c}"
-
-                        if key_chk_conv not in st.session_state:
-                            st.session_state[key_chk_conv] = id_c in st.session_state["ids_sel_conv"]
-
-                        st.checkbox(
-                            "Selecionar",
-                            key=key_chk_conv,
-                            label_visibility="collapsed",
-                            on_change=sincronizar_checkbox_selecao,
-                            args=("ids_sel_conv", key_chk_conv, id_c)
-                        )
+                        checkbox_linha_selecao("ids_sel_conv", "chk_conv_", id_c)
 
                     with cc[1]:
-                        st.markdown(f"**{nome_c}**")
+                        if id_c in st.session_state["ids_sel_conv"]:
+                            st.markdown(
+                                f"**{nome_c}** <span class='row-selected-tag'>Selecionado</span>",
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.markdown(f"**{nome_c}**")
 
                     with cc[2]:
                         st.write(dep_c)
@@ -1087,7 +1407,9 @@ elif pagina == "Painel Administrativo":
                         st.session_state.pop("popup_lote_conv", None)
                         st.rerun()
 
-    # ── ABA 2 — MODELOS BGR ──────────────────────────────────────────────────
+    # =====================================================
+    # ABA 2 — MODELOS BGR
+    # =====================================================
 
     with aba2:
         st.subheader("📄 Gerenciar Modelos BGR")
@@ -1140,10 +1462,10 @@ elif pagina == "Painel Administrativo":
             if st.session_state.pop("reset_chk_bgr", False):
                 limpar_selecao("ids_sel_bgr", "chk_bgr_")
 
-            modo_sel_bgr = st.checkbox(
-                "☑️ Modo seleção",
+            modo_sel_bgr = controle_modo_selecao(
+                "Modo seleção em lote",
                 key="modo_sel_bgr",
-                help="Ative para selecionar vários modelos BGR e excluir em lote."
+                help_text="Ative para selecionar vários modelos BGR e excluir em lote."
             )
 
             if not modo_sel_bgr:
@@ -1151,40 +1473,19 @@ elif pagina == "Painel Administrativo":
                 st.session_state.pop("popup_lote_bgr", None)
 
             if modo_sel_bgr:
-                qtd_sel_bgr = len(st.session_state["ids_sel_bgr"])
+                barra_selecao_lote(
+                    key_ids="ids_sel_bgr",
+                    df_filtrado=df_bgr_f,
+                    prefixo_chk="chk_bgr_",
+                    sufixo_key="bgr",
+                    nome_plural="modelo(s) BGR"
+                )
 
-                st.markdown("#### Ações em lote")
+                st.markdown("<hr style='margin:14px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
 
-                ab1, ab2, ab3, ab4 = st.columns([2.2, 1.7, 1.6, 2.2])
+                hb = st.columns([0.45, 0.7, 2.95, 1.8, 1.4, 0.55, 0.55])
 
-                with ab1:
-                    if st.button("✅ Selecionar todos filtrados", key="sel_todos_bgr"):
-                        selecionar_todos_filtrados("ids_sel_bgr", df_bgr_f, "chk_bgr_")
-                        st.rerun()
-
-                with ab2:
-                    if st.button("🧹 Limpar seleção", key="limpar_sel_bgr"):
-                        limpar_selecao("ids_sel_bgr", "chk_bgr_")
-                        st.session_state.pop("popup_lote_bgr", None)
-                        st.rerun()
-
-                with ab3:
-                    st.metric("Selecionados", qtd_sel_bgr)
-
-                with ab4:
-                    if st.button(
-                        "🗑️ Excluir selecionados",
-                        key="btn_lote_bgr",
-                        disabled=qtd_sel_bgr == 0
-                    ):
-                        st.session_state["popup_lote_bgr"] = True
-                        st.rerun()
-
-                st.markdown("<hr style='margin:8px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
-
-                hb = st.columns([0.4, 0.7, 3, 1.8, 1.4, 0.55, 0.55])
-
-                for h, col in zip(["", "", "Nome", "Departamento", "Status", "", ""], hb):
+                for h, col in zip(["Sel.", "", "Nome", "Departamento", "Status", "", ""], hb):
                     col.markdown(f"**{h}**")
 
             else:
@@ -1195,30 +1496,22 @@ elif pagina == "Painel Administrativo":
 
             st.markdown("<hr style='margin:4px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
 
+            if df_bgr_f.empty:
+                st.info("Nenhum modelo BGR encontrado com os filtros selecionados.")
+
             for _, row_b in df_bgr_f.iterrows():
-                id_b   = int(row_b["id"])
+                id_b = int(row_b["id"])
                 nome_b = valor_texto(row_b["nome"])
-                dep_b  = valor_texto(row_b["departamento"])
+                dep_b = valor_texto(row_b["departamento"])
                 stat_b = valor_texto(row_b["status"])
-                img_b  = valor_texto(row_b.get("imagem", ""))
+                img_b = valor_texto(row_b.get("imagem", ""))
                 desc_b = valor_texto(row_b.get("descricao", ""))
 
                 if modo_sel_bgr:
-                    bc = st.columns([0.4, 0.7, 3, 1.8, 1.4, 0.55, 0.55])
+                    bc = st.columns([0.45, 0.7, 2.95, 1.8, 1.4, 0.55, 0.55])
 
                     with bc[0]:
-                        key_chk_bgr = f"chk_bgr_{id_b}"
-
-                        if key_chk_bgr not in st.session_state:
-                            st.session_state[key_chk_bgr] = id_b in st.session_state["ids_sel_bgr"]
-
-                        st.checkbox(
-                            "Selecionar",
-                            key=key_chk_bgr,
-                            label_visibility="collapsed",
-                            on_change=sincronizar_checkbox_selecao,
-                            args=("ids_sel_bgr", key_chk_bgr, id_b)
-                        )
+                        checkbox_linha_selecao("ids_sel_bgr", "chk_bgr_", id_b)
 
                     with bc[1]:
                         if img_b:
@@ -1228,7 +1521,14 @@ elif pagina == "Painel Administrativo":
                                 st.image(iu_b, width=50)
 
                     with bc[2]:
-                        st.markdown(f"**{nome_b}**")
+                        if id_b in st.session_state["ids_sel_bgr"]:
+                            st.markdown(
+                                f"**{nome_b}** <span class='row-selected-tag'>Selecionado</span>",
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.markdown(f"**{nome_b}**")
+
                         st.caption(desc_b[:55] + "…" if len(desc_b) > 55 else desc_b)
 
                     with bc[3]:
@@ -1348,7 +1648,9 @@ elif pagina == "Painel Administrativo":
                         st.session_state.pop("popup_lote_bgr", None)
                         st.rerun()
 
-    # ── ABA 3 — SOLICITAÇÕES ─────────────────────────────────────────────────
+    # =====================================================
+    # ABA 3 — SOLICITAÇÕES
+    # =====================================================
 
     with aba3:
         st.subheader("📥 Solicitações de acesso aos BGR")
@@ -1400,7 +1702,9 @@ elif pagina == "Painel Administrativo":
                 key="dl_sol"
             )
 
-    # ── ABA 4 — EXPORTAÇÕES ──────────────────────────────────────────────────
+    # =====================================================
+    # ABA 4 — EXPORTAÇÕES
+    # =====================================================
 
     with aba4:
         st.subheader("📦 Exportar bases para Excel")
@@ -1432,7 +1736,9 @@ elif pagina == "Painel Administrativo":
                 key="dl_excel_all"
             )
 
-    # ── ABA 5 — AUDITORIA ────────────────────────────────────────────────────
+    # =====================================================
+    # ABA 5 — AUDITORIA
+    # =====================================================
 
     with aba5:
         st.subheader("🔍 Auditoria de Movimentações")
