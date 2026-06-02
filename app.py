@@ -796,10 +796,10 @@ def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plura
                     f"<div class='sel-ok'>Pronto para excluir {qtd} item(ns). A confirmação aparecerá abaixo da lista.</div>",
                     unsafe_allow_html=True
                 )
-        else:
-            st.markdown(
-                '<div class="sel-tip">Marque itens individualmente ou use <strong>Marcar filtrados</strong>.</div>',
-                unsafe_allow_html=True
+            else:
+                st.markdown(
+                    '<div class="sel-tip">Marque itens individualmente ou use <strong>Marcar filtrados</strong>.</div>',
+                    unsafe_allow_html=True
                 )
 
     return qtd
