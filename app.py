@@ -403,47 +403,74 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
 
     st.caption(f"{len(df_filtrado)} item(s) encontrado(s)")
 
-    # ── Cabeçalho fixo com st.columns reais ──
-    h0, h1, h2, h3, h4, h5 = st.columns([3, 2.5, 2, 2, 1.5, 1.4])
-    h0.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Nome</span>", unsafe_allow_html=True)
-    h1.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Descrição</span>", unsafe_allow_html=True)
-    h2.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Departamento</span>", unsafe_allow_html=True)
-    h3.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Detalhamento</span>", unsafe_allow_html=True)
-    h4.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Status</span>", unsafe_allow_html=True)
-    h5.markdown("<span style='font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em'>Acesso</span>", unsafe_allow_html=True)
+    # ── Cabeçalho fixo ──
+    cab0, cab1, cab2, cab3, cab4, cab5, cab6 = st.columns([0.6, 2.8, 2.2, 1.8, 2.0, 1.4, 1.4])
+    estilo_cab = "font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em"
+    cab0.markdown(f"<span style='{estilo_cab}'>Expandir</span>",     unsafe_allow_html=True)
+    cab1.markdown(f"<span style='{estilo_cab}'>Nome</span>",         unsafe_allow_html=True)
+    cab2.markdown(f"<span style='{estilo_cab}'>Descrição</span>",    unsafe_allow_html=True)
+    cab3.markdown(f"<span style='{estilo_cab}'>Departamento</span>", unsafe_allow_html=True)
+    cab4.markdown(f"<span style='{estilo_cab}'>Detalhamento</span>", unsafe_allow_html=True)
+    cab5.markdown(f"<span style='{estilo_cab}'>Status</span>",       unsafe_allow_html=True)
+    cab6.markdown(f"<span style='{estilo_cab}'>Acesso</span>",       unsafe_allow_html=True)
     st.markdown("<hr style='margin:4px 0 6px 0;border-color:#333'>", unsafe_allow_html=True)
 
     for idx, row in df_filtrado.iterrows():
-        nome_i  = valor_texto(row.get("nome", ""))
-        dep_i   = valor_texto(row.get("departamento", ""))
-        desc_i  = valor_texto(row.get("descricao", ""))
-        stat_i  = valor_texto(row.get("status", ""))
-        url_i   = valor_texto(row.get("url", ""))
-        det_i   = valor_texto(row.get("detalhamento", ""))
-        img_i   = valor_texto(row.get("imagem", ""))
-        bgr_i   = valor_texto(row.get("arquivo_bgr", ""))
-        data_i  = valor_texto(row.get("data_cadastro", row.get("data_upload", "")))
+        nome_i = valor_texto(row.get("nome", ""))
+        dep_i  = valor_texto(row.get("departamento", ""))
+        desc_i = valor_texto(row.get("descricao", ""))
+        stat_i = valor_texto(row.get("status", ""))
+        url_i  = valor_texto(row.get("url", ""))
+        det_i  = valor_texto(row.get("detalhamento", ""))
+        img_i  = valor_texto(row.get("imagem", ""))
+        bgr_i  = valor_texto(row.get("arquivo_bgr", ""))
+        data_i = valor_texto(row.get("data_cadastro", row.get("data_upload", "")))
 
-        desc_curta = (desc_i[:40] + "…") if len(desc_i) > 40 else desc_i
-        det_curto  = (det_i[:35]  + "…") if len(det_i)  > 35 else (det_i if det_i else "—")
+        desc_curta = (desc_i[:35] + "…") if len(desc_i) > 35 else desc_i
+        det_curto  = (det_i[:30]  + "…") if len(det_i)  > 30 else (det_i if det_i else "—")
 
-        # ── Linha com colunas perfeitamente alinhadas ──
-        c0, c1, c2, c3, c4, c5 = st.columns([3, 2.5, 2, 2, 1.5, 1.4])
+        chave_exp = f"exp_{tipo}_{idx}"
+        expandido = st.session_state.get(chave_exp, False)
+
+        # ── Linha da tabela ──
+        c0, c1, c2, c3, c4, c5, c6 = st.columns([0.6, 2.8, 2.2, 1.8, 2.0, 1.4, 1.4])
 
         with c0:
-            st.markdown(f"<span style='font-weight:700;color:#F5F5F5;font-size:13px'>{nome_i}</span>", unsafe_allow_html=True)
+            btn_label = "➖" if expandido else "➕"
+            if st.button(btn_label, key=f"toggle_{tipo}_{idx}", help="Expandir / Ocultar detalhes"):
+                st.session_state[chave_exp] = not expandido
+                st.rerun()
+
         with c1:
-            st.markdown(f"<span style='color:#A8A8A8;font-size:12px'>{desc_curta}</span>", unsafe_allow_html=True)
+            st.markdown(
+                f"<span style='font-weight:700;color:#F5F5F5;font-size:13px'>{nome_i}</span>",
+                unsafe_allow_html=True
+            )
         with c2:
-            st.markdown(f"<span style='color:#D0D0D0;font-size:12px'>{dep_i}</span>", unsafe_allow_html=True)
+            st.markdown(
+                f"<span style='color:#A8A8A8;font-size:12px'>{desc_curta}</span>",
+                unsafe_allow_html=True
+            )
         with c3:
-            st.markdown(f"<span style='color:#A8A8A8;font-size:12px'>{det_curto}</span>", unsafe_allow_html=True)
+            st.markdown(
+                f"<span style='color:#D0D0D0;font-size:12px'>{dep_i}</span>",
+                unsafe_allow_html=True
+            )
         with c4:
-            st.markdown(status_html(stat_i), unsafe_allow_html=True)
+            st.markdown(
+                f"<span style='color:#A8A8A8;font-size:12px'>{det_curto}</span>",
+                unsafe_allow_html=True
+            )
         with c5:
+            st.markdown(status_html(stat_i), unsafe_allow_html=True)
+
+        with c6:
             if tipo == "conversor":
                 if stat_i == "Ativo" and url_i:
-                    st.markdown(f'<a class="botao-link" href="{url_i}" target="_blank">🔗 Acessar</a>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<a class="botao-link" href="{url_i}" target="_blank">🔗 Acessar</a>',
+                        unsafe_allow_html=True
+                    )
                 elif stat_i == "Em manutenção":
                     st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
                 else:
@@ -454,12 +481,12 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
                 else:
                     st.markdown('<span class="status-desenvolvimento">📄 Sem arq.</span>', unsafe_allow_html=True)
 
-        # ── Linha de expansão de detalhes — separada, abaixo da linha ──
-        chave_exp = f"expandido_{tipo}_{idx}"
-        if st.session_state.get(chave_exp, False):
+        # ── Painel de detalhes (abre abaixo da linha quando expandido) ──
+        if expandido:
             with st.container():
                 st.markdown(
-                    "<div style='background:#1F1F1F;border:1px solid #FF8000;border-radius:10px;padding:18px 22px;margin-bottom:8px'>",
+                    "<div style='background:#1a1a1a;border:1px solid #FF8000;border-radius:10px;"
+                    "padding:20px 24px;margin:2px 0 10px 0'>",
                     unsafe_allow_html=True
                 )
                 d1, d2 = st.columns([3, 1])
@@ -534,14 +561,7 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
-        # Botão Ver detalhes / Fechar — centralizado abaixo da linha
-        btn_label = "▲ Fechar" if st.session_state.get(chave_exp, False) else "▼ Ver detalhes"
-        if st.button(btn_label, key=f"btn_exp_{tipo}_{idx}", use_container_width=True):
-            st.session_state[chave_exp] = not st.session_state.get(chave_exp, False)
-            st.rerun()
-
         st.markdown("<hr style='margin:2px 0 2px 0;border-color:#2a2a2a'>", unsafe_allow_html=True)
-
 # =========================================================
 # INICIALIZAÇÃO
 # =========================================================
