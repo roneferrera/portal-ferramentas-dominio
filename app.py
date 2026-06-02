@@ -117,6 +117,8 @@ div[data-testid="stExpander"] { background-color: var(--tr-bg-card); border: 1px
 hr { border-color: var(--tr-border); }
 a { color: var(--tr-orange); }
 a:hover { color: var(--tr-orange-dark); }
+.lixeira-restaurar { padding: 12px 16px; border-radius: 10px; background-color: var(--tr-danger-bg); border: 1px solid #c62828; margin-bottom: 10px; }
+.lixeira-restaurar strong { color: var(--tr-danger-text); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -243,6 +245,53 @@ def registrar_auditoria(acao: str, tabela: str, descricao: str, dados_antes: str
         })
     except Exception as e:
         st.warning(f"Auditoria não registrada: {e}")
+
+# =========================================================
+# LIXEIRA — RESTAURAÇÃO
+# =========================================================
+
+def adicionar_lixeira(tabela: str, registro: dict):
+    """Salva o registro na session_state para possível restauração."""
+    if "lixeira" not in st.session_state:
+        st.session_state["lixeira"] = []
+    st.session_state["lixeira"].append({
+        "tabela":    tabela,
+        "registro":  registro,
+        "excluido_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    })
+
+
+def mostrar_lixeira():
+    """Exibe banner de restauração para exclusões recentes."""
+    lixeira = st.session_state.get("lixeira", [])
+    if not lixeira:
+        return
+    for i, item in enumerate(lixeira):
+        nome_reg = item["registro"].get("nome", f"Registro #{i+1}")
+        col_msg, col_restaurar, col_fechar = st.columns([5, 1.5, 1])
+        with col_msg:
+            st.markdown(
+                f'<div class="lixeira-restaurar">🗑️ <strong>"{nome_reg}"</strong> foi excluído. '
+                f'Excluído em: {item["excluido_em"]}</div>',
+                unsafe_allow_html=True
+            )
+        with col_restaurar:
+            if st.button("↩️ Restaurar", key=f"restaurar_{i}"):
+                dados_sem_id = {k: v for k, v in item["registro"].items() if k != "id"}
+                inserir_registro(item["tabela"], dados_sem_id)
+                registrar_auditoria(
+                    "RESTAURAÇÃO",
+                    item["tabela"],
+                    f"Registro restaurado: {nome_reg}",
+                    dados_depois=str(dados_sem_id)
+                )
+                st.session_state["lixeira"].pop(i)
+                st.success(f'"{nome_reg}" restaurado com sucesso!')
+                st.rerun()
+        with col_fechar:
+            if st.button("✖ Fechar", key=f"fechar_lixeira_{i}"):
+                st.session_state["lixeira"].pop(i)
+                st.rerun()
 
 # =========================================================
 # FUNÇÕES AUXILIARES
@@ -418,7 +467,6 @@ elif pagina == "Relatórios BGR":
     st.title("📄 Relatórios BGR")
 
     df_modelos = carregar_tabela("modelos_bgr")
-
     st.write("Consulte os modelos BGR disponíveis. Para baixar o arquivo `.bgr`, informe seus dados para registro da solicitação.")
 
     col_filtro1, col_filtro2 = st.columns([1, 2])
@@ -568,84 +616,93 @@ elif pagina == "Painel Administrativo":
 
     st.write("")
 
+    # Exibe banners de restauração no topo do painel
+    mostrar_lixeira()
+
     aba1, aba2, aba3, aba4, aba5 = st.tabs([
-        "Conversores",
-        "Modelos BGR",
-        "Solicitações BGR",
-        "Exportações",
-        "Auditoria"
+        "🛠️ Conversores",
+        "📄 Modelos BGR",
+        "📥 Solicitações BGR",
+        "📦 Exportações",
+        "🔍 Auditoria"
     ])
 
     # =====================================================
-    # ABA 1 — CONVERSORES (Cadastrar + Listar + Editar + Excluir)
+    # ABA 1 — CONVERSORES
     # =====================================================
 
     with aba1:
         st.subheader("🛠️ Gerenciar Conversores")
 
-        # ---------- FORMULÁRIO DE CADASTRO / EDIÇÃO ----------
-        modo_conv = st.session_state.get("modo_conv", "cadastro")
+        modo_conv     = st.session_state.get("modo_conv", "cadastro")
         editando_conv = st.session_state.get("editando_conv", None)
 
-        if modo_conv == "edicao" and editando_conv is not None:
-            st.markdown("#### ✏️ Editando conversor")
-            df_conv_atual = carregar_tabela("conversores")
-            linha = df_conv_atual[df_conv_atual["id"] == editando_conv]
-            if linha.empty:
-                st.warning("Registro não encontrado.")
-                st.session_state["modo_conv"] = "cadastro"
-                st.session_state["editando_conv"] = None
-                st.rerun()
-            linha = linha.iloc[0]
-        else:
-            st.markdown("#### ➕ Cadastrar novo conversor")
-            linha = None
+        # ---------- FORMULÁRIO EXPANSÍVEL ----------
+        label_expander_conv = "✏️ Editando conversor — clique para expandir/recolher" if modo_conv == "edicao" else "➕ Cadastrar novo conversor — clique para expandir/recolher"
+        expanded_conv       = st.session_state.get("expandir_form_conv", False)
 
-        with st.form("form_conversor_principal"):
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                f_nome = st.text_input("Nome do conversor", value=valor_texto(linha["nome"]) if linha is not None else "")
-                f_dep  = st.selectbox("Departamento", DEPARTAMENTOS,
-                    index=DEPARTAMENTOS.index(linha["departamento"]) if linha is not None and linha["departamento"] in DEPARTAMENTOS else 0)
-                f_url  = st.text_input("URL do conversor", value=valor_texto(linha.get("url", "")) if linha is not None else "")
-            with col_f2:
-                f_desc   = st.text_area("Descrição", value=valor_texto(linha["descricao"]) if linha is not None else "", height=120)
-                f_status = st.selectbox("Status", STATUS_FERRAMENTAS,
-                    index=STATUS_FERRAMENTAS.index(linha["status"]) if linha is not None and linha["status"] in STATUS_FERRAMENTAS else 0)
+        with st.expander(label_expander_conv, expanded=expanded_conv):
 
-            col_btn1, col_btn2 = st.columns([1, 3])
-            with col_btn1:
-                enviar_conv = st.form_submit_button("💾 Salvar" if modo_conv == "edicao" else "➕ Cadastrar")
-            with col_btn2:
-                if modo_conv == "edicao":
-                    cancelar = st.form_submit_button("✖ Cancelar edição")
-                    if cancelar:
-                        st.session_state["modo_conv"] = "cadastro"
-                        st.session_state["editando_conv"] = None
-                        st.rerun()
-
-            if enviar_conv:
-                if f_nome and f_dep and f_desc:
-                    dados = {"nome": f_nome, "departamento": f_dep, "descricao": f_desc, "url": f_url, "status": f_status}
-                    if modo_conv == "edicao" and editando_conv is not None:
-                        dados_antes = str(linha.to_dict())
-                        atualizar_registro("conversores", int(editando_conv), dados)
-                        registrar_auditoria("EDIÇÃO", "conversores", f"Conversor editado: {f_nome}", dados_antes, str(dados))
-                        st.success("Conversor atualizado com sucesso!")
-                        st.session_state["modo_conv"] = "cadastro"
-                        st.session_state["editando_conv"] = None
-                    else:
-                        dados["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                        inserir_registro("conversores", dados)
-                        registrar_auditoria("CADASTRO", "conversores", f"Novo conversor: {f_nome}", dados_depois=str(dados))
-                        st.success("Conversor cadastrado com sucesso!")
+            if modo_conv == "edicao" and editando_conv is not None:
+                df_conv_atual = carregar_tabela("conversores")
+                linha = df_conv_atual[df_conv_atual["id"] == editando_conv]
+                if linha.empty:
+                    st.warning("Registro não encontrado.")
+                    st.session_state["modo_conv"]    = "cadastro"
+                    st.session_state["editando_conv"] = None
                     st.rerun()
-                else:
-                    st.warning("Preencha nome, departamento e descrição.")
+                linha = linha.iloc[0]
+            else:
+                linha = None
+
+            with st.form("form_conversor_principal"):
+                col_f1, col_f2 = st.columns(2)
+                with col_f1:
+                    f_nome = st.text_input("Nome do conversor", value=valor_texto(linha["nome"]) if linha is not None else "")
+                    f_dep  = st.selectbox("Departamento", DEPARTAMENTOS,
+                        index=DEPARTAMENTOS.index(linha["departamento"]) if linha is not None and linha["departamento"] in DEPARTAMENTOS else 0)
+                    f_url  = st.text_input("URL do conversor", value=valor_texto(linha.get("url", "")) if linha is not None else "")
+                with col_f2:
+                    f_desc   = st.text_area("Descrição", value=valor_texto(linha["descricao"]) if linha is not None else "", height=120)
+                    f_status = st.selectbox("Status", STATUS_FERRAMENTAS,
+                        index=STATUS_FERRAMENTAS.index(linha["status"]) if linha is not None and linha["status"] in STATUS_FERRAMENTAS else 0)
+
+                col_btn1, col_btn2 = st.columns([1, 3])
+                with col_btn1:
+                    enviar_conv = st.form_submit_button("💾 Salvar" if modo_conv == "edicao" else "➕ Cadastrar")
+                with col_btn2:
+                    if modo_conv == "edicao":
+                        cancelar_conv = st.form_submit_button("✖ Cancelar edição")
+                        if cancelar_conv:
+                            st.session_state["modo_conv"]        = "cadastro"
+                            st.session_state["editando_conv"]     = None
+                            st.session_state["expandir_form_conv"] = False
+                            st.rerun()
+
+                if enviar_conv:
+                    if f_nome and f_dep and f_desc:
+                        dados = {"nome": f_nome, "departamento": f_dep, "descricao": f_desc, "url": f_url, "status": f_status}
+                        if modo_conv == "edicao" and editando_conv is not None:
+                            dados_antes = str(linha.to_dict())
+                            atualizar_registro("conversores", int(editando_conv), dados)
+                            registrar_auditoria("EDIÇÃO", "conversores", f"Conversor editado: {f_nome}", dados_antes, str(dados))
+                            st.success("Conversor atualizado com sucesso!")
+                            st.session_state["modo_conv"]        = "cadastro"
+                            st.session_state["editando_conv"]     = None
+                            st.session_state["expandir_form_conv"] = False
+                        else:
+                            dados["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                            inserir_registro("conversores", dados)
+                            registrar_auditoria("CADASTRO", "conversores", f"Novo conversor: {f_nome}", dados_depois=str(dados))
+                            st.success("Conversor cadastrado com sucesso!")
+                            st.session_state["expandir_form_conv"] = False
+                        st.rerun()
+                    else:
+                        st.warning("Preencha nome, departamento e descrição.")
 
         st.write("---")
 
-        # ---------- LISTA DE CONVERSORES ----------
+        # ---------- LISTA ----------
         st.markdown("#### 📋 Lista de Conversores")
 
         df_conv = carregar_tabela("conversores")
@@ -653,32 +710,48 @@ elif pagina == "Painel Administrativo":
         if df_conv.empty:
             st.info("Nenhum conversor cadastrado ainda.")
         else:
-            # Exclusão em lote
-            st.markdown("**Selecionar para exclusão em lote:**")
+            # Modo seleção múltipla
+            modo_selecao_conv = st.checkbox("☑️ Selecionar múltiplos para exclusão em lote", key="modo_sel_conv")
+
             ids_selecionados_conv = []
 
-            col_sel_all = st.columns([0.3, 9.7])
-            with col_sel_all[0]:
-                sel_todos_conv = st.checkbox("Todos", key="sel_todos_conv")
+            if modo_selecao_conv:
+                col_marcar, _ = st.columns([2, 8])
+                with col_marcar:
+                    marcar_todos_conv = st.checkbox("✅ Marcar todos / Desmarcar todos", key="marcar_todos_conv")
+
+            # Cabeçalho da lista
+            if modo_selecao_conv:
+                cab = st.columns([0.4, 3.2, 2, 1.5, 0.8, 0.8])
+            else:
+                cab = st.columns([3.6, 2, 1.5, 0.8, 0.8])
+
+            headers = ["Nome / URL", "Departamento", "Status", "Editar", "Excluir"] if not modo_selecao_conv else ["", "Nome / URL", "Departamento", "Status", "Editar", "Excluir"]
+            for h, c in zip(headers, cab):
+                c.markdown(f"**{h}**")
+
+            st.markdown("<hr style='margin:4px 0 10px 0'>", unsafe_allow_html=True)
 
             for _, row_c in df_conv.iterrows():
                 id_c   = int(row_c["id"])
                 nome_c = valor_texto(row_c["nome"])
                 dep_c  = valor_texto(row_c["departamento"])
                 stat_c = valor_texto(row_c["status"])
+                url_c  = valor_texto(row_c.get("url", ""))
 
-                col_chk, col_info, col_dep, col_stat, col_edit, col_del = st.columns([0.3, 3.5, 2, 1.5, 0.7, 0.7])
-
-                with col_chk:
-                    marcado = st.checkbox("", key=f"chk_conv_{id_c}", value=sel_todos_conv)
-                    if marcado:
-                        ids_selecionados_conv.append(id_c)
+                if modo_selecao_conv:
+                    col_chk, col_info, col_dep, col_stat, col_edit, col_del = st.columns([0.4, 3.2, 2, 1.5, 0.8, 0.8])
+                    with col_chk:
+                        marcado = st.checkbox("", key=f"chk_conv_{id_c}", value=marcar_todos_conv)
+                        if marcado:
+                            ids_selecionados_conv.append(id_c)
+                else:
+                    col_info, col_dep, col_stat, col_edit, col_del = st.columns([3.6, 2, 1.5, 0.8, 0.8])
 
                 with col_info:
                     st.markdown(f"**{nome_c}**")
-                    url_c = valor_texto(row_c.get("url", ""))
                     if url_c:
-                        st.markdown(f"[🔗 Acessar]({url_c})", unsafe_allow_html=False)
+                        st.markdown(f"[🔗 Acessar]({url_c})")
 
                 with col_dep:
                     st.write(dep_c)
@@ -688,42 +761,60 @@ elif pagina == "Painel Administrativo":
 
                 with col_edit:
                     if st.button("✏️", key=f"edit_conv_{id_c}", help="Editar"):
-                        st.session_state["modo_conv"]    = "edicao"
-                        st.session_state["editando_conv"] = id_c
+                        st.session_state["modo_conv"]         = "edicao"
+                        st.session_state["editando_conv"]      = id_c
+                        st.session_state["expandir_form_conv"] = True
                         st.rerun()
 
                 with col_del:
                     if st.button("🗑️", key=f"del_conv_{id_c}", help="Excluir"):
-                        st.session_state[f"confirmar_del_conv_{id_c}"] = True
+                        st.session_state[f"popup_del_conv_{id_c}"] = True
 
-                if st.session_state.get(f"confirmar_del_conv_{id_c}", False):
-                    st.warning(f"Confirmar exclusão de **{nome_c}**?")
-                    col_sim, col_nao = st.columns(2)
-                    with col_sim:
-                        if st.button("✅ Sim, excluir", key=f"sim_del_conv_{id_c}"):
-                            excluir_registro("conversores", id_c)
-                            registrar_auditoria("EXCLUSÃO", "conversores", f"Conversor excluído: {nome_c}", dados_antes=str(row_c.to_dict()))
-                            st.session_state.pop(f"confirmar_del_conv_{id_c}", None)
-                            st.success("Excluído com sucesso!")
-                            st.rerun()
-                    with col_nao:
-                        if st.button("❌ Cancelar", key=f"nao_del_conv_{id_c}"):
-                            st.session_state.pop(f"confirmar_del_conv_{id_c}", None)
-                            st.rerun()
+                # Pop-up de confirmação de exclusão
+                if st.session_state.get(f"popup_del_conv_{id_c}", False):
+                    with st.container():
+                        st.warning(f"⚠️ Tem certeza que deseja excluir **{nome_c}**? Esta ação pode ser desfeita logo após.")
+                        col_sim, col_nao, _ = st.columns([1.2, 1.2, 6])
+                        with col_sim:
+                            if st.button("✅ Sim, excluir", key=f"sim_conv_{id_c}"):
+                                adicionar_lixeira("conversores", row_c.to_dict())
+                                excluir_registro("conversores", id_c)
+                                registrar_auditoria("EXCLUSÃO", "conversores", f"Conversor excluído: {nome_c}", dados_antes=str(row_c.to_dict()))
+                                st.session_state.pop(f"popup_del_conv_{id_c}", None)
+                                st.rerun()
+                        with col_nao:
+                            if st.button("❌ Cancelar", key=f"nao_conv_{id_c}"):
+                                st.session_state.pop(f"popup_del_conv_{id_c}", None)
+                                st.rerun()
 
-            # Botão exclusão em lote
-            if ids_selecionados_conv:
+            # Exclusão em lote
+            if modo_selecao_conv and ids_selecionados_conv:
                 st.write("")
                 st.error(f"⚠️ {len(ids_selecionados_conv)} conversor(es) selecionado(s) para exclusão em lote.")
                 if st.button("🗑️ Excluir selecionados", key="excluir_lote_conv"):
-                    nomes_excluidos = df_conv[df_conv["id"].isin(ids_selecionados_conv)]["nome"].tolist()
-                    excluir_varios("conversores", ids_selecionados_conv)
-                    registrar_auditoria("EXCLUSÃO EM LOTE", "conversores", f"Excluídos: {', '.join(nomes_excluidos)}")
-                    st.success(f"{len(ids_selecionados_conv)} conversor(es) excluído(s)!")
-                    st.rerun()
+                    st.session_state["popup_lote_conv"] = True
+
+            if st.session_state.get("popup_lote_conv", False) and ids_selecionados_conv:
+                nomes_lote = df_conv[df_conv["id"].isin(ids_selecionados_conv)]["nome"].tolist()
+                st.warning(f"⚠️ Confirmar exclusão em lote de: **{', '.join(nomes_lote)}**?")
+                col_sl, col_nl, _ = st.columns([1.2, 1.2, 6])
+                with col_sl:
+                    if st.button("✅ Confirmar exclusão", key="confirmar_lote_conv"):
+                        for id_lote in ids_selecionados_conv:
+                            row_lote = df_conv[df_conv["id"] == id_lote].iloc[0]
+                            adicionar_lixeira("conversores", row_lote.to_dict())
+                            excluir_registro("conversores", id_lote)
+                        registrar_auditoria("EXCLUSÃO EM LOTE", "conversores", f"Excluídos: {', '.join(nomes_lote)}")
+                        st.session_state.pop("popup_lote_conv", None)
+                        st.success(f"{len(ids_selecionados_conv)} conversor(es) excluído(s)!")
+                        st.rerun()
+                with col_nl:
+                    if st.button("❌ Cancelar", key="cancelar_lote_conv"):
+                        st.session_state.pop("popup_lote_conv", None)
+                        st.rerun()
 
     # =====================================================
-    # ABA 2 — MODELOS BGR (Cadastrar + Listar + Editar + Excluir)
+    # ABA 2 — MODELOS BGR
     # =====================================================
 
     with aba2:
@@ -732,101 +823,100 @@ elif pagina == "Painel Administrativo":
         modo_bgr     = st.session_state.get("modo_bgr", "cadastro")
         editando_bgr = st.session_state.get("editando_bgr", None)
 
-        if modo_bgr == "edicao" and editando_bgr is not None:
-            st.markdown("#### ✏️ Editando modelo BGR")
-            df_bgr_atual = carregar_tabela("modelos_bgr")
-            linha_bgr = df_bgr_atual[df_bgr_atual["id"] == editando_bgr]
-            if linha_bgr.empty:
-                st.warning("Registro não encontrado.")
-                st.session_state["modo_bgr"] = "cadastro"
-                st.session_state["editando_bgr"] = None
-                st.rerun()
-            linha_bgr = linha_bgr.iloc[0]
+        label_expander_bgr = "✏️ Editando modelo BGR — clique para expandir/recolher" if modo_bgr == "edicao" else "➕ Cadastrar novo modelo BGR — clique para expandir/recolher"
+        expanded_bgr       = st.session_state.get("expandir_form_bgr", False)
 
-            # Mostra imagem atual
-            nome_img_atual = valor_texto(linha_bgr.get("imagem", ""))
-            if nome_img_atual:
-                img_url_atual = url_publica(BUCKET_IMAGENS, nome_img_atual)
-                if img_url_atual:
-                    st.image(img_url_atual, caption="Imagem atual", width=180)
-        else:
-            st.markdown("#### ➕ Cadastrar novo modelo BGR")
-            linha_bgr     = None
-            nome_img_atual = ""
+        with st.expander(label_expander_bgr, expanded=expanded_bgr):
 
-        with st.form("form_bgr_principal"):
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                b_nome   = st.text_input("Nome do modelo BGR", value=valor_texto(linha_bgr["nome"]) if linha_bgr is not None else "")
-                b_dep    = st.selectbox("Departamento", DEPARTAMENTOS,
-                    index=DEPARTAMENTOS.index(linha_bgr["departamento"]) if linha_bgr is not None and linha_bgr["departamento"] in DEPARTAMENTOS else 0)
-                b_status = st.selectbox("Status", STATUS_FERRAMENTAS,
-                    index=STATUS_FERRAMENTAS.index(linha_bgr["status"]) if linha_bgr is not None and linha_bgr["status"] in STATUS_FERRAMENTAS else 0)
-            with col_b2:
-                b_desc = st.text_area("Descrição", value=valor_texto(linha_bgr["descricao"]) if linha_bgr is not None else "", height=120)
+            if modo_bgr == "edicao" and editando_bgr is not None:
+                df_bgr_atual = carregar_tabela("modelos_bgr")
+                linha_bgr    = df_bgr_atual[df_bgr_atual["id"] == editando_bgr]
+                if linha_bgr.empty:
+                    st.warning("Registro não encontrado.")
+                    st.session_state["modo_bgr"]    = "cadastro"
+                    st.session_state["editando_bgr"] = None
+                    st.rerun()
+                linha_bgr      = linha_bgr.iloc[0]
+                nome_img_atual = valor_texto(linha_bgr.get("imagem", ""))
+                if nome_img_atual:
+                    img_url_atual = url_publica(BUCKET_IMAGENS, nome_img_atual)
+                    if img_url_atual:
+                        st.image(img_url_atual, caption="Imagem atual", width=160)
+            else:
+                linha_bgr      = None
+                nome_img_atual = ""
 
-            label_img = "Substituir imagem (opcional)" if modo_bgr == "edicao" else "Imagem de prévia *"
-            label_bgr = "Substituir arquivo .BGR (opcional)" if modo_bgr == "edicao" else "Arquivo .BGR"
+            with st.form("form_bgr_principal"):
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
+                    b_nome   = st.text_input("Nome do modelo BGR", value=valor_texto(linha_bgr["nome"]) if linha_bgr is not None else "")
+                    b_dep    = st.selectbox("Departamento", DEPARTAMENTOS,
+                        index=DEPARTAMENTOS.index(linha_bgr["departamento"]) if linha_bgr is not None and linha_bgr["departamento"] in DEPARTAMENTOS else 0)
+                    b_status = st.selectbox("Status", STATUS_FERRAMENTAS,
+                        index=STATUS_FERRAMENTAS.index(linha_bgr["status"]) if linha_bgr is not None and linha_bgr["status"] in STATUS_FERRAMENTAS else 0)
+                with col_b2:
+                    b_desc = st.text_area("Descrição", value=valor_texto(linha_bgr["descricao"]) if linha_bgr is not None else "", height=120)
 
-            b_imagem = st.file_uploader(label_img, type=["png", "jpg", "jpeg"])
-            b_arquivo = st.file_uploader(label_bgr, type=["bgr"])
+                b_imagem  = st.file_uploader("Substituir imagem (opcional)" if modo_bgr == "edicao" else "Imagem de prévia *", type=["png", "jpg", "jpeg"])
+                b_arquivo = st.file_uploader("Substituir arquivo .BGR (opcional)" if modo_bgr == "edicao" else "Arquivo .BGR", type=["bgr"])
 
-            col_bbtn1, col_bbtn2 = st.columns([1, 3])
-            with col_bbtn1:
-                enviar_bgr = st.form_submit_button("💾 Salvar" if modo_bgr == "edicao" else "➕ Cadastrar")
-            with col_bbtn2:
-                if modo_bgr == "edicao":
-                    cancelar_bgr = st.form_submit_button("✖ Cancelar edição")
-                    if cancelar_bgr:
-                        st.session_state["modo_bgr"] = "cadastro"
-                        st.session_state["editando_bgr"] = None
-                        st.rerun()
+                col_bbtn1, col_bbtn2 = st.columns([1, 3])
+                with col_bbtn1:
+                    enviar_bgr = st.form_submit_button("💾 Salvar" if modo_bgr == "edicao" else "➕ Cadastrar")
+                with col_bbtn2:
+                    if modo_bgr == "edicao":
+                        cancelar_bgr = st.form_submit_button("✖ Cancelar edição")
+                        if cancelar_bgr:
+                            st.session_state["modo_bgr"]        = "cadastro"
+                            st.session_state["editando_bgr"]     = None
+                            st.session_state["expandir_form_bgr"] = False
+                            st.rerun()
 
-            if enviar_bgr:
-                if b_nome and b_dep:
-                    if modo_bgr == "cadastro" and b_imagem is None:
-                        st.warning("Selecione uma imagem de prévia para cadastrar.")
-                    else:
-                        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
-                        # Imagem
-                        nome_img_final = nome_img_atual
-                        if b_imagem is not None:
-                            nome_img_final = f"{timestamp}_{nome_arquivo_seguro(b_imagem.name)}"
-                            ext_i = b_imagem.name.split(".")[-1].lower()
-                            ct_i  = "image/jpeg" if ext_i == "jpg" else f"image/{ext_i}"
-                            upload_arquivo(BUCKET_IMAGENS, nome_img_final, b_imagem.getbuffer().tobytes(), ct_i)
-
-                        # Arquivo BGR
-                        nome_bgr_final = valor_texto(linha_bgr.get("arquivo_bgr", "")) if linha_bgr is not None else ""
-                        if b_arquivo is not None:
-                            nome_bgr_final = f"{timestamp}_{nome_arquivo_seguro(b_arquivo.name)}"
-                            upload_arquivo(BUCKET_BGR, nome_bgr_final, b_arquivo.getbuffer().tobytes(), "application/octet-stream")
-
-                        dados_bgr = {
-                            "nome": b_nome, "departamento": b_dep, "descricao": b_desc,
-                            "status": b_status, "imagem": nome_img_final, "arquivo_bgr": nome_bgr_final
-                        }
-
-                        if modo_bgr == "edicao" and editando_bgr is not None:
-                            dados_antes_bgr = str(linha_bgr.to_dict())
-                            atualizar_registro("modelos_bgr", int(editando_bgr), dados_bgr)
-                            registrar_auditoria("EDIÇÃO", "modelos_bgr", f"Modelo BGR editado: {b_nome}", dados_antes_bgr, str(dados_bgr))
-                            st.success("Modelo BGR atualizado com sucesso!")
-                            st.session_state["modo_bgr"] = "cadastro"
-                            st.session_state["editando_bgr"] = None
+                if enviar_bgr:
+                    if b_nome and b_dep:
+                        if modo_bgr == "cadastro" and b_imagem is None:
+                            st.warning("Selecione uma imagem de prévia para cadastrar.")
                         else:
-                            dados_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                            inserir_registro("modelos_bgr", dados_bgr)
-                            registrar_auditoria("UPLOAD", "modelos_bgr", f"Novo modelo BGR: {b_nome}", dados_depois=str(dados_bgr))
-                            st.success("Modelo BGR cadastrado com sucesso!")
-                        st.rerun()
-                else:
-                    st.warning("Preencha nome e departamento.")
+                            timestamp      = datetime.now().strftime("%Y%m%d%H%M%S")
+                            nome_img_final = nome_img_atual
+
+                            if b_imagem is not None:
+                                nome_img_final = f"{timestamp}_{nome_arquivo_seguro(b_imagem.name)}"
+                                ext_i = b_imagem.name.split(".")[-1].lower()
+                                ct_i  = "image/jpeg" if ext_i == "jpg" else f"image/{ext_i}"
+                                upload_arquivo(BUCKET_IMAGENS, nome_img_final, b_imagem.getbuffer().tobytes(), ct_i)
+
+                            nome_bgr_final = valor_texto(linha_bgr.get("arquivo_bgr", "")) if linha_bgr is not None else ""
+                            if b_arquivo is not None:
+                                nome_bgr_final = f"{timestamp}_{nome_arquivo_seguro(b_arquivo.name)}"
+                                upload_arquivo(BUCKET_BGR, nome_bgr_final, b_arquivo.getbuffer().tobytes(), "application/octet-stream")
+
+                            dados_bgr = {
+                                "nome": b_nome, "departamento": b_dep, "descricao": b_desc,
+                                "status": b_status, "imagem": nome_img_final, "arquivo_bgr": nome_bgr_final
+                            }
+
+                            if modo_bgr == "edicao" and editando_bgr is not None:
+                                dados_antes_bgr = str(linha_bgr.to_dict())
+                                atualizar_registro("modelos_bgr", int(editando_bgr), dados_bgr)
+                                registrar_auditoria("EDIÇÃO", "modelos_bgr", f"Modelo BGR editado: {b_nome}", dados_antes_bgr, str(dados_bgr))
+                                st.success("Modelo BGR atualizado com sucesso!")
+                                st.session_state["modo_bgr"]        = "cadastro"
+                                st.session_state["editando_bgr"]     = None
+                                st.session_state["expandir_form_bgr"] = False
+                            else:
+                                dados_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                                inserir_registro("modelos_bgr", dados_bgr)
+                                registrar_auditoria("UPLOAD", "modelos_bgr", f"Novo modelo BGR: {b_nome}", dados_depois=str(dados_bgr))
+                                st.success("Modelo BGR cadastrado com sucesso!")
+                                st.session_state["expandir_form_bgr"] = False
+                            st.rerun()
+                    else:
+                        st.warning("Preencha nome e departamento.")
 
         st.write("---")
 
-        # ---------- LISTA DE MODELOS BGR ----------
+        # ---------- LISTA ----------
         st.markdown("#### 📋 Lista de Modelos BGR")
 
         df_bgr_lista = carregar_tabela("modelos_bgr")
@@ -834,11 +924,14 @@ elif pagina == "Painel Administrativo":
         if df_bgr_lista.empty:
             st.info("Nenhum modelo BGR cadastrado ainda.")
         else:
+            modo_selecao_bgr = st.checkbox("☑️ Selecionar múltiplos para exclusão em lote", key="modo_sel_bgr")
+
             ids_selecionados_bgr = []
 
-            col_sel_all_bgr = st.columns([0.3, 9.7])
-            with col_sel_all_bgr[0]:
-                sel_todos_bgr = st.checkbox("Todos", key="sel_todos_bgr")
+            if modo_selecao_bgr:
+                col_marcar_bgr, _ = st.columns([2, 8])
+                with col_marcar_bgr:
+                    marcar_todos_bgr = st.checkbox("✅ Marcar todos / Desmarcar todos", key="marcar_todos_bgr")
 
             for _, row_b in df_bgr_lista.iterrows():
                 id_b   = int(row_b["id"])
@@ -846,23 +939,25 @@ elif pagina == "Painel Administrativo":
                 dep_b  = valor_texto(row_b["departamento"])
                 stat_b = valor_texto(row_b["status"])
                 img_b  = valor_texto(row_b.get("imagem", ""))
+                desc_b = valor_texto(row_b.get("descricao", ""))
 
-                col_chk_b, col_img_b, col_info_b, col_dep_b, col_stat_b, col_edit_b, col_del_b = st.columns([0.3, 1, 3, 2, 1.5, 0.7, 0.7])
-
-                with col_chk_b:
-                    marcado_b = st.checkbox("", key=f"chk_bgr_{id_b}", value=sel_todos_bgr)
-                    if marcado_b:
-                        ids_selecionados_bgr.append(id_b)
+                if modo_selecao_bgr:
+                    col_chk_b, col_img_b, col_info_b, col_dep_b, col_stat_b, col_edit_b, col_del_b = st.columns([0.4, 0.9, 3, 1.8, 1.5, 0.7, 0.7])
+                    with col_chk_b:
+                        marcado_b = st.checkbox("", key=f"chk_bgr_{id_b}", value=marcar_todos_bgr)
+                        if marcado_b:
+                            ids_selecionados_bgr.append(id_b)
+                else:
+                    col_img_b, col_info_b, col_dep_b, col_stat_b, col_edit_b, col_del_b = st.columns([0.9, 3.4, 1.8, 1.5, 0.7, 0.7])
 
                 with col_img_b:
                     if img_b:
                         img_url_b = url_publica(BUCKET_IMAGENS, img_b)
                         if img_url_b:
-                            st.image(img_url_b, width=70)
+                            st.image(img_url_b, width=65)
 
                 with col_info_b:
                     st.markdown(f"**{nome_b}**")
-                    desc_b = valor_texto(row_b.get("descricao", ""))
                     st.caption(desc_b[:80] + "..." if len(desc_b) > 80 else desc_b)
 
                 with col_dep_b:
@@ -873,39 +968,57 @@ elif pagina == "Painel Administrativo":
 
                 with col_edit_b:
                     if st.button("✏️", key=f"edit_bgr_{id_b}", help="Editar"):
-                        st.session_state["modo_bgr"]    = "edicao"
-                        st.session_state["editando_bgr"] = id_b
+                        st.session_state["modo_bgr"]         = "edicao"
+                        st.session_state["editando_bgr"]      = id_b
+                        st.session_state["expandir_form_bgr"] = True
                         st.rerun()
 
                 with col_del_b:
                     if st.button("🗑️", key=f"del_bgr_{id_b}", help="Excluir"):
-                        st.session_state[f"confirmar_del_bgr_{id_b}"] = True
+                        st.session_state[f"popup_del_bgr_{id_b}"] = True
 
-                if st.session_state.get(f"confirmar_del_bgr_{id_b}", False):
-                    st.warning(f"Confirmar exclusão de **{nome_b}**?")
-                    col_sim_b, col_nao_b = st.columns(2)
-                    with col_sim_b:
-                        if st.button("✅ Sim, excluir", key=f"sim_del_bgr_{id_b}"):
-                            excluir_registro("modelos_bgr", id_b)
-                            registrar_auditoria("EXCLUSÃO", "modelos_bgr", f"Modelo BGR excluído: {nome_b}", dados_antes=str(row_b.to_dict()))
-                            st.session_state.pop(f"confirmar_del_bgr_{id_b}", None)
-                            st.success("Excluído com sucesso!")
-                            st.rerun()
-                    with col_nao_b:
-                        if st.button("❌ Cancelar", key=f"nao_del_bgr_{id_b}"):
-                            st.session_state.pop(f"confirmar_del_bgr_{id_b}", None)
-                            st.rerun()
+                # Pop-up de confirmação
+                if st.session_state.get(f"popup_del_bgr_{id_b}", False):
+                    with st.container():
+                        st.warning(f"⚠️ Tem certeza que deseja excluir **{nome_b}**? Esta ação pode ser desfeita logo após.")
+                        col_sim_b, col_nao_b, _ = st.columns([1.2, 1.2, 6])
+                        with col_sim_b:
+                            if st.button("✅ Sim, excluir", key=f"sim_bgr_{id_b}"):
+                                adicionar_lixeira("modelos_bgr", row_b.to_dict())
+                                excluir_registro("modelos_bgr", id_b)
+                                registrar_auditoria("EXCLUSÃO", "modelos_bgr", f"Modelo BGR excluído: {nome_b}", dados_antes=str(row_b.to_dict()))
+                                st.session_state.pop(f"popup_del_bgr_{id_b}", None)
+                                st.rerun()
+                        with col_nao_b:
+                            if st.button("❌ Cancelar", key=f"nao_bgr_{id_b}"):
+                                st.session_state.pop(f"popup_del_bgr_{id_b}", None)
+                                st.rerun()
 
             # Exclusão em lote BGR
-            if ids_selecionados_bgr:
+            if modo_selecao_bgr and ids_selecionados_bgr:
                 st.write("")
                 st.error(f"⚠️ {len(ids_selecionados_bgr)} modelo(s) selecionado(s) para exclusão em lote.")
                 if st.button("🗑️ Excluir selecionados", key="excluir_lote_bgr"):
-                    nomes_excluidos_bgr = df_bgr_lista[df_bgr_lista["id"].isin(ids_selecionados_bgr)]["nome"].tolist()
-                    excluir_varios("modelos_bgr", ids_selecionados_bgr)
-                    registrar_auditoria("EXCLUSÃO EM LOTE", "modelos_bgr", f"Excluídos: {', '.join(nomes_excluidos_bgr)}")
-                    st.success(f"{len(ids_selecionados_bgr)} modelo(s) excluído(s)!")
-                    st.rerun()
+                    st.session_state["popup_lote_bgr"] = True
+
+            if st.session_state.get("popup_lote_bgr", False) and ids_selecionados_bgr:
+                nomes_lote_bgr = df_bgr_lista[df_bgr_lista["id"].isin(ids_selecionados_bgr)]["nome"].tolist()
+                st.warning(f"⚠️ Confirmar exclusão em lote de: **{', '.join(nomes_lote_bgr)}**?")
+                col_sl_b, col_nl_b, _ = st.columns([1.2, 1.2, 6])
+                with col_sl_b:
+                    if st.button("✅ Confirmar exclusão", key="confirmar_lote_bgr"):
+                        for id_lote_b in ids_selecionados_bgr:
+                            row_lote_b = df_bgr_lista[df_bgr_lista["id"] == id_lote_b].iloc[0]
+                            adicionar_lixeira("modelos_bgr", row_lote_b.to_dict())
+                            excluir_registro("modelos_bgr", id_lote_b)
+                        registrar_auditoria("EXCLUSÃO EM LOTE", "modelos_bgr", f"Excluídos: {', '.join(nomes_lote_bgr)}")
+                        st.session_state.pop("popup_lote_bgr", None)
+                        st.success(f"{len(ids_selecionados_bgr)} modelo(s) excluído(s)!")
+                        st.rerun()
+                with col_nl_b:
+                    if st.button("❌ Cancelar", key="cancelar_lote_bgr"):
+                        st.session_state.pop("popup_lote_bgr", None)
+                        st.rerun()
 
     # =====================================================
     # ABA 3 — SOLICITAÇÕES BGR
@@ -989,7 +1102,7 @@ elif pagina == "Painel Administrativo":
             with col_a1:
                 filtro_acao = st.selectbox(
                     "Filtrar por ação:",
-                    ["Todas", "CADASTRO", "UPLOAD", "EDIÇÃO", "EXCLUSÃO", "EXCLUSÃO EM LOTE", "EXPORTAÇÃO"],
+                    ["Todas", "CADASTRO", "UPLOAD", "EDIÇÃO", "EXCLUSÃO", "EXCLUSÃO EM LOTE", "RESTAURAÇÃO", "EXPORTAÇÃO"],
                     key="audit_acao"
                 )
             with col_a2:
