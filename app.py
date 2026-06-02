@@ -1,12 +1,8 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
 from io import BytesIO
-import gspread
-from gspread_dataframe import get_as_dataframe, set_with_dataframe
-from google.oauth2.service_account import Credentials
-import base64
+from supabase import create_client, Client
 
 # =========================================================
 # CONFIGURAÇÃO GERAL
@@ -36,12 +32,8 @@ STATUS_FERRAMENTAS = [
     "Em desenvolvimento"
 ]
 
-ABAS_SHEETS = {
-    "conversores":       "conversores",
-    "modelos_bgr":       "modelos_bgr",
-    "escolhas_bgr":      "escolhas_bgr",
-    "solicitacoes_bgr":  "solicitacoes_bgr",
-}
+BUCKET_IMAGENS = "imagens-bgr"
+BUCKET_BGR     = "arquivos-bgr"
 
 # =========================================================
 # ESTILO VISUAL
@@ -125,200 +117,190 @@ a:hover { color: var(--tr-orange-dark); }
 """, unsafe_allow_html=True)
 
 # =========================================================
-# GOOGLE SHEETS — CONEXÃO
+# SUPABASE — CONEXÃO
 # =========================================================
-
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
 
 @st.cache_resource
-def conectar_gsheets():
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=SCOPES
+def get_supabase() -> Client:
+    return create_client(
+        st.secrets["SUPABASE_URL"],
+        st.secrets["SUPABASE_KEY"]
     )
-    return gspread.authorize(creds)
-
-
-def abrir_planilha():
-    gc = conectar_gsheets()
-    return gc.open_by_key(st.secrets["SPREADSHEET_ID"])
-
 
 # =========================================================
-# GOOGLE SHEETS — LEITURA E ESCRITA DE DATAFRAMES
+# SUPABASE — BANCO DE DADOS (tabelas)
 # =========================================================
 
-def carregar_aba(nome_aba: str) -> pd.DataFrame:
+def carregar_tabela(tabela: str) -> pd.DataFrame:
     try:
-        sh = abrir_planilha()
-        ws = sh.worksheet(nome_aba)
-        df = get_as_dataframe(ws, evaluate_formulas=True, dtype=str)
-        df = df.dropna(how="all")
-        df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
-        return df.reset_index(drop=True)
+        sb = get_supabase()
+        response = sb.table(tabela).select("*").execute()
+        if response.data:
+            return pd.DataFrame(response.data)
+        return pd.DataFrame()
     except Exception as e:
-        st.error(f"Erro ao carregar aba '{nome_aba}': {e}")
+        st.error(f"Erro ao carregar tabela '{tabela}': {e}")
         return pd.DataFrame()
 
 
-def salvar_aba(df: pd.DataFrame, nome_aba: str):
+def inserir_registro(tabela: str, dados: dict):
     try:
-        sh = abrir_planilha()
-        ws = sh.worksheet(nome_aba)
-        ws.clear()
-        set_with_dataframe(ws, df, include_index=False)
+        sb = get_supabase()
+        sb.table(tabela).insert(dados).execute()
     except Exception as e:
-        st.error(f"Erro ao salvar aba '{nome_aba}': {e}")
+        st.error(f"Erro ao inserir em '{tabela}': {e}")
 
 
-# =========================================================
-# GOOGLE SHEETS — IMAGENS E ARQUIVOS BGR (base64 na planilha)
-# =========================================================
+def atualizar_registro(tabela: str, id_registro: int, dados: dict):
+    try:
+        sb = get_supabase()
+        sb.table(tabela).update(dados).eq("id", id_registro).execute()
+    except Exception as e:
+        st.error(f"Erro ao atualizar em '{tabela}': {e}")
 
-def salvar_arquivo_sheets(
-    nome_aba_arquivos: str,
-    nome_arquivo: str,
-    bytes_arquivo: bytes,
-    tipo: str
-):
+
+def deletar_registro(tabela: str, id_registro: int):
+    try:
+        sb = get_supabase()
+        sb.table(tabela).delete().eq("id", id_registro).execute()
+    except Exception as e:
+        st.error(f"Erro ao deletar em '{tabela}': {e}")
+
+
+def salvar_tabela_completa(tabela: str, df: pd.DataFrame):
     """
-    Salva arquivo em base64 em uma aba dedicada da planilha.
-    tipo: 'imagem' ou 'bgr'
+    Usado no Gerenciar Dados: apaga tudo e reinserere o df editado.
+    Preserva apenas colunas que existem na tabela (ignora 'id' gerado pelo Supabase).
     """
     try:
-        sh = abrir_planilha()
+        sb = get_supabase()
+
+        # Busca todos os ids existentes e deleta
+        existentes = sb.table(tabela).select("id").execute()
+        for row in existentes.data:
+            sb.table(tabela).delete().eq("id", row["id"]).execute()
+
+        # Reinsere linha a linha
+        df_limpo = df.drop(columns=["id"], errors="ignore")
+        for _, row in df_limpo.iterrows():
+            registro = {k: (None if pd.isna(v) else v) for k, v in row.items()}
+            sb.table(tabela).insert(registro).execute()
+
+        st.success("Alterações salvas com sucesso no Supabase!")
+    except Exception as e:
+        st.error(f"Erro ao salvar tabela '{tabela}': {e}")
+
+# =========================================================
+# SUPABASE — STORAGE (arquivos)
+# =========================================================
+
+def upload_arquivo(bucket: str, nome_arquivo: str, bytes_arquivo: bytes, content_type: str) -> str | None:
+    """
+    Faz upload do arquivo no Supabase Storage.
+    Retorna a URL pública do arquivo ou None em caso de erro.
+    """
+    try:
+        sb = get_supabase()
+
+        # Remove arquivo anterior com mesmo nome se existir
         try:
-            ws = sh.worksheet(nome_aba_arquivos)
-        except gspread.exceptions.WorksheetNotFound:
-            ws = sh.add_worksheet(
-                title=nome_aba_arquivos,
-                rows=1000,
-                cols=4
-            )
-            ws.append_row(["nome_arquivo", "tipo", "conteudo_base64", "data_upload"])
+            sb.storage.from_(bucket).remove([nome_arquivo])
+        except Exception:
+            pass
 
-        b64 = base64.b64encode(bytes_arquivo).decode("utf-8")
-        ws.append_row([
-            nome_arquivo,
-            tipo,
-            b64,
-            datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        ])
+        sb.storage.from_(bucket).upload(
+            path=nome_arquivo,
+            file=bytes_arquivo,
+            file_options={"content-type": content_type, "upsert": "true"}
+        )
+
+        url = sb.storage.from_(bucket).get_public_url(nome_arquivo)
+        return url
+
     except Exception as e:
-        st.error(f"Erro ao salvar arquivo '{nome_arquivo}': {e}")
+        st.error(f"Erro ao fazer upload para '{bucket}/{nome_arquivo}': {e}")
+        return None
 
 
-@st.cache_data(ttl=300)
-def carregar_arquivo_sheets(nome_aba_arquivos: str, nome_arquivo: str) -> bytes | None:
+def baixar_arquivo(bucket: str, nome_arquivo: str) -> bytes | None:
     """
-    Recupera arquivo em base64 da planilha e retorna os bytes.
+    Baixa o arquivo do Supabase Storage e retorna os bytes.
     """
     try:
-        sh = abrir_planilha()
-        ws = sh.worksheet(nome_aba_arquivos)
-        registros = ws.get_all_records()
-
-        for linha in registros:
-            if linha.get("nome_arquivo") == nome_arquivo:
-                b64 = linha.get("conteudo_base64", "")
-                if b64:
-                    return base64.b64decode(b64)
-        return None
+        sb = get_supabase()
+        response = sb.storage.from_(bucket).download(nome_arquivo)
+        return response
     except Exception:
         return None
 
+
+def url_publica(bucket: str, nome_arquivo: str) -> str:
+    """
+    Retorna a URL pública de um arquivo no Supabase Storage.
+    """
+    try:
+        sb = get_supabase()
+        return sb.storage.from_(bucket).get_public_url(nome_arquivo)
+    except Exception:
+        return ""
 
 # =========================================================
 # FUNÇÕES AUXILIARES
 # =========================================================
 
-def inicializar_planilha():
+def inicializar_conversores_padrao():
     """
-    Garante que todas as abas existam na planilha com os cabeçalhos corretos.
+    Insere os conversores padrão se a tabela estiver vazia.
     """
-    try:
-        sh = abrir_planilha()
-        abas_existentes = [ws.title for ws in sh.worksheets()]
+    df = carregar_tabela("conversores")
+    if not df.empty:
+        return
 
-        estrutura = {
-            "conversores": [
-                "nome", "departamento", "descricao",
-                "url", "status", "data_cadastro"
-            ],
-            "modelos_bgr": [
-                "nome", "departamento", "descricao",
-                "imagem", "arquivo_bgr", "status", "data_upload"
-            ],
-            "escolhas_bgr": [
-                "data_hora", "cliente", "departamento",
-                "modelo", "observacao"
-            ],
-            "solicitacoes_bgr": [
-                "data_hora", "nome_usuario", "email_usuario",
-                "cnpj", "codigo_cliente_dominio", "departamento",
-                "modelo", "arquivo_bgr", "observacao", "status"
-            ],
-        }
+    conversores_padrao = [
+        {
+            "nome": "Gerador RPA TXT",
+            "departamento": "Folha de Pagamento",
+            "descricao": "Gera arquivos TXT para processamento por RPA.",
+            "url": "https://gerador-rpa-txt.streamlit.app/",
+            "status": "Ativo",
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        },
+        {
+            "nome": "Converte Bens Domínio",
+            "departamento": "Patrimônio",
+            "descricao": "Conversor de bens patrimoniais para leiaute compatível com Domínio.",
+            "url": "https://convertebensdominio.streamlit.app/",
+            "status": "Ativo",
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        },
+        {
+            "nome": "Eventos Com Plano / Sem Plano",
+            "departamento": "Fiscal",
+            "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
+            "url": "https://eventos-complano-semplano.streamlit.app/",
+            "status": "Ativo",
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        },
+        {
+            "nome": "Clientes e Fornecedores - Conta Patrimonial",
+            "departamento": "Contabilidade",
+            "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
+            "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
+            "status": "Ativo",
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        },
+        {
+            "nome": "Conversor Leiaute com Separador Domínio",
+            "departamento": "Fiscal",
+            "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
+            "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
+            "status": "Ativo",
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        },
+    ]
 
-        for nome_aba, colunas in estrutura.items():
-            if nome_aba not in abas_existentes:
-                ws = sh.add_worksheet(title=nome_aba, rows=1000, cols=len(colunas))
-                ws.append_row(colunas)
-
-        # Preenche conversores padrão se a aba estiver vazia
-        ws_conv = sh.worksheet("conversores")
-        dados = ws_conv.get_all_records()
-
-        if not dados:
-            df_inicial = pd.DataFrame([
-                {
-                    "nome": "Gerador RPA TXT",
-                    "departamento": "Folha de Pagamento",
-                    "descricao": "Gera arquivos TXT para processamento por RPA.",
-                    "url": "https://gerador-rpa-txt.streamlit.app/",
-                    "status": "Ativo",
-                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                },
-                {
-                    "nome": "Converte Bens Domínio",
-                    "departamento": "Patrimônio",
-                    "descricao": "Conversor de bens patrimoniais para leiaute compatível com Domínio.",
-                    "url": "https://convertebensdominio.streamlit.app/",
-                    "status": "Ativo",
-                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                },
-                {
-                    "nome": "Eventos Com Plano / Sem Plano",
-                    "departamento": "Fiscal",
-                    "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
-                    "url": "https://eventos-complano-semplano.streamlit.app/",
-                    "status": "Ativo",
-                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                },
-                {
-                    "nome": "Clientes e Fornecedores - Conta Patrimonial",
-                    "departamento": "Contabilidade",
-                    "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
-                    "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
-                    "status": "Ativo",
-                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                },
-                {
-                    "nome": "Conversor Leiaute com Separador Domínio",
-                    "departamento": "Fiscal",
-                    "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
-                    "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
-                    "status": "Ativo",
-                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                },
-            ])
-            set_with_dataframe(ws_conv, df_inicial, include_index=False)
-
-    except Exception as e:
-        st.error(f"Erro ao inicializar planilha: {e}")
+    for c in conversores_padrao:
+        inserir_registro("conversores", c)
 
 
 def status_html(status):
@@ -354,7 +336,9 @@ def nome_arquivo_seguro(nome_arquivo):
 
 
 def valor_texto(valor):
-    if pd.isna(valor):
+    if valor is None:
+        return ""
+    if isinstance(valor, float) and pd.isna(valor):
         return ""
     return str(valor).strip()
 
@@ -363,12 +347,11 @@ def email_valido(email):
     email = str(email).strip()
     return "@" in email and "." in email
 
-
 # =========================================================
 # INICIALIZAÇÃO
 # =========================================================
 
-inicializar_planilha()
+inicializar_conversores_padrao()
 mostrar_logo()
 
 # =========================================================
@@ -398,9 +381,9 @@ if pagina == "Início":
     st.title("🧩 Portal de Ferramentas")
     st.write("Central de conversores, relatórios BGR e ferramentas internas por departamento.")
 
-    df_conversores   = carregar_aba("conversores")
-    df_modelos       = carregar_aba("modelos_bgr")
-    df_solicitacoes  = carregar_aba("solicitacoes_bgr")
+    df_conversores  = carregar_tabela("conversores")
+    df_modelos      = carregar_tabela("modelos_bgr")
+    df_solicitacoes = carregar_tabela("solicitacoes_bgr")
 
     col1, col2, col3 = st.columns(3)
 
@@ -445,7 +428,7 @@ if pagina == "Início":
 elif pagina == "Conversores":
     st.title("🛠️ Conversores")
 
-    df = carregar_aba("conversores")
+    df = carregar_tabela("conversores")
 
     col1, col2 = st.columns(2)
 
@@ -500,7 +483,7 @@ elif pagina == "Conversores":
 elif pagina == "Relatórios BGR":
     st.title("📄 Relatórios BGR")
 
-    df_modelos = carregar_aba("modelos_bgr")
+    df_modelos = carregar_tabela("modelos_bgr")
 
     st.write(
         "Consulte os modelos BGR disponíveis. Para baixar o arquivo `.bgr`, "
@@ -539,10 +522,10 @@ elif pagina == "Relatórios BGR":
         st.success(f"{len(df_dep)} modelo(s) BGR encontrado(s).")
 
         for index, modelo_info in df_dep.iterrows():
-            nome_modelo    = valor_texto(modelo_info.get("nome", ""))
+            nome_modelo      = valor_texto(modelo_info.get("nome", ""))
             descricao_modelo = valor_texto(modelo_info.get("descricao", ""))
-            nome_imagem    = valor_texto(modelo_info.get("imagem", ""))
-            nome_bgr       = valor_texto(modelo_info.get("arquivo_bgr", ""))
+            nome_imagem      = valor_texto(modelo_info.get("imagem", ""))
+            nome_bgr         = valor_texto(modelo_info.get("arquivo_bgr", ""))
 
             st.markdown("<div class='card'>", unsafe_allow_html=True)
 
@@ -552,12 +535,11 @@ elif pagina == "Relatórios BGR":
                 st.markdown(f"### {nome_modelo}")
 
                 if nome_imagem:
-                    img_bytes = carregar_arquivo_sheets("arquivos_uploads", nome_imagem)
-
-                    if img_bytes:
-                        st.image(img_bytes, caption="Prévia", width=220)
+                    img_url = url_publica(BUCKET_IMAGENS, nome_imagem)
+                    if img_url:
+                        st.image(img_url, caption="Prévia", width=220)
                         with st.expander("🔍 Ver imagem maior"):
-                            st.image(img_bytes, caption=nome_modelo, use_container_width=True)
+                            st.image(img_url, caption=nome_modelo, use_container_width=True)
                     else:
                         st.warning("Imagem não encontrada.")
                 else:
@@ -577,17 +559,12 @@ elif pagina == "Relatórios BGR":
                 st.markdown("#### Acesso")
 
                 if nome_bgr:
-                    bgr_bytes = carregar_arquivo_sheets("arquivos_uploads", nome_bgr)
-
-                    if bgr_bytes:
-                        if st.button("Solicitar acesso", key=f"solicitar_modelo_{index}"):
-                            st.session_state["modelo_bgr_solicitado"]     = nome_modelo
-                            st.session_state["arquivo_bgr_solicitado"]    = nome_bgr
-                            st.session_state["departamento_bgr_solicitado"] = departamento
-                            st.session_state["download_bgr_liberado"]     = False
-                            st.success("Modelo selecionado. Preencha os dados abaixo.")
-                    else:
-                        st.warning("Arquivo .BGR não encontrado.")
+                    if st.button("Solicitar acesso", key=f"solicitar_modelo_{index}"):
+                        st.session_state["modelo_bgr_solicitado"]       = nome_modelo
+                        st.session_state["arquivo_bgr_solicitado"]      = nome_bgr
+                        st.session_state["departamento_bgr_solicitado"] = departamento
+                        st.session_state["download_bgr_liberado"]       = False
+                        st.success("Modelo selecionado. Preencha os dados abaixo.")
                 else:
                     st.info("Sem arquivo .BGR cadastrado.")
 
@@ -601,8 +578,8 @@ elif pagina == "Relatórios BGR":
         st.write("---")
         st.subheader("Solicitar acesso ao modelo BGR")
 
-        modelo_solicitado      = st.session_state.get("modelo_bgr_solicitado", "")
-        arquivo_solicitado     = st.session_state.get("arquivo_bgr_solicitado", "")
+        modelo_solicitado       = st.session_state.get("modelo_bgr_solicitado", "")
+        arquivo_solicitado      = st.session_state.get("arquivo_bgr_solicitado", "")
         departamento_solicitado = st.session_state.get("departamento_bgr_solicitado", "")
 
         if modelo_solicitado:
@@ -611,11 +588,11 @@ elif pagina == "Relatórios BGR":
             st.warning("Selecione um modelo acima antes de solicitar o acesso.")
 
         with st.form("form_solicitacao_bgr"):
-            nome_usuario         = st.text_input("Nome")
-            email_usuario        = st.text_input("E-mail")
-            cnpj                 = st.text_input("CNPJ")
+            nome_usuario           = st.text_input("Nome")
+            email_usuario          = st.text_input("E-mail")
+            cnpj                   = st.text_input("CNPJ")
             codigo_cliente_dominio = st.text_input("Código cliente Domínio")
-            observacao           = st.text_area("Observações")
+            observacao             = st.text_area("Observações")
 
             confirmar = st.form_submit_button("Registrar e liberar download")
 
@@ -633,9 +610,7 @@ elif pagina == "Relatórios BGR":
                 elif not codigo_cliente_dominio:
                     st.warning("Informe o código cliente Domínio.")
                 else:
-                    df_solicitacoes = carregar_aba("solicitacoes_bgr")
-
-                    novo = pd.DataFrame([{
+                    inserir_registro("solicitacoes_bgr", {
                         "data_hora":               datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         "nome_usuario":            nome_usuario,
                         "email_usuario":           email_usuario,
@@ -646,20 +621,13 @@ elif pagina == "Relatórios BGR":
                         "arquivo_bgr":             arquivo_solicitado,
                         "observacao":              observacao,
                         "status":                  "Liberado"
-                    }])
-
-                    df_solicitacoes = pd.concat(
-                        [df_solicitacoes, novo],
-                        ignore_index=True
-                    )
-
-                    salvar_aba(df_solicitacoes, "solicitacoes_bgr")
+                    })
 
                     st.session_state["download_bgr_liberado"] = True
                     st.success("Solicitação registrada com sucesso. Download liberado.")
 
-        if st.session_state.get("download_bgr_liberado", False):
-            bgr_bytes = carregar_arquivo_sheets("arquivos_uploads", arquivo_solicitado)
+        if st.session_state.get("download_bgr_liberado", False) and arquivo_solicitado:
+            bgr_bytes = baixar_arquivo(BUCKET_BGR, arquivo_solicitado)
 
             if bgr_bytes:
                 st.download_button(
@@ -670,7 +638,7 @@ elif pagina == "Relatórios BGR":
                     key="download_bgr_liberado_btn"
                 )
             else:
-                st.warning("Arquivo .BGR não encontrado.")
+                st.warning("Arquivo .BGR não encontrado no storage.")
 
 # =========================================================
 # PAINEL ADMINISTRATIVO
@@ -705,30 +673,24 @@ elif pagina == "Painel Administrativo":
         st.subheader("➕ Cadastrar novo conversor")
 
         with st.form("form_conversor"):
-            nome        = st.text_input("Nome do conversor")
+            nome         = st.text_input("Nome do conversor")
             departamento = st.selectbox("Departamento", DEPARTAMENTOS)
-            descricao   = st.text_area("Descrição")
-            url         = st.text_input("URL do conversor")
-            status      = st.selectbox("Status", STATUS_FERRAMENTAS)
+            descricao    = st.text_area("Descrição")
+            url          = st.text_input("URL do conversor")
+            status       = st.selectbox("Status", STATUS_FERRAMENTAS)
 
             enviar = st.form_submit_button("Cadastrar conversor")
 
             if enviar:
                 if nome and departamento and descricao:
-                    df = carregar_aba("conversores")
-
-                    novo = pd.DataFrame([{
-                        "nome":           nome,
-                        "departamento":   departamento,
-                        "descricao":      descricao,
-                        "url":            url,
-                        "status":         status,
-                        "data_cadastro":  datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    }])
-
-                    df = pd.concat([df, novo], ignore_index=True)
-                    salvar_aba(df, "conversores")
-
+                    inserir_registro("conversores", {
+                        "nome":          nome,
+                        "departamento":  departamento,
+                        "descricao":     descricao,
+                        "url":           url,
+                        "status":        status,
+                        "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    })
                     st.success("Conversor cadastrado com sucesso!")
                 else:
                     st.warning("Preencha nome, departamento e descrição.")
@@ -745,10 +707,10 @@ elif pagina == "Painel Administrativo":
         )
 
         with st.form("form_bgr"):
-            nome_modelo        = st.text_input("Nome do modelo BGR")
+            nome_modelo         = st.text_input("Nome do modelo BGR")
             departamento_modelo = st.selectbox("Departamento do modelo", DEPARTAMENTOS)
-            descricao_modelo   = st.text_area("Descrição do modelo")
-            status_modelo      = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
+            descricao_modelo    = st.text_area("Descrição do modelo")
+            status_modelo       = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
 
             imagem      = st.file_uploader(
                 "Selecione a imagem de prévia do relatório",
@@ -765,42 +727,42 @@ elif pagina == "Painel Administrativo":
                 if nome_modelo and departamento_modelo and imagem:
                     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-                    # Salva imagem no Google Sheets (base64)
+                    # Upload da imagem no Supabase Storage
                     nome_imagem_salva = f"{timestamp}_{nome_arquivo_seguro(imagem.name)}"
-                    salvar_arquivo_sheets(
-                        "arquivos_uploads",
+                    ext_imagem        = imagem.name.split(".")[-1].lower()
+                    content_type_img  = f"image/{ext_imagem}" if ext_imagem != "jpg" else "image/jpeg"
+
+                    url_img = upload_arquivo(
+                        BUCKET_IMAGENS,
                         nome_imagem_salva,
                         imagem.getbuffer().tobytes(),
-                        "imagem"
+                        content_type_img
                     )
 
-                    # Salva arquivo BGR no Google Sheets (base64)
+                    # Upload do arquivo BGR no Supabase Storage
                     nome_bgr_salvo = ""
                     if arquivo_bgr is not None:
                         nome_bgr_salvo = f"{timestamp}_{nome_arquivo_seguro(arquivo_bgr.name)}"
-                        salvar_arquivo_sheets(
-                            "arquivos_uploads",
+                        upload_arquivo(
+                            BUCKET_BGR,
                             nome_bgr_salvo,
                             arquivo_bgr.getbuffer().tobytes(),
-                            "bgr"
+                            "application/octet-stream"
                         )
 
-                    df = carregar_aba("modelos_bgr")
-
-                    novo = pd.DataFrame([{
-                        "nome":         nome_modelo,
-                        "departamento": departamento_modelo,
-                        "descricao":    descricao_modelo,
-                        "imagem":       nome_imagem_salva,
-                        "arquivo_bgr":  nome_bgr_salvo,
-                        "status":       status_modelo,
-                        "data_upload":  datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    }])
-
-                    df = pd.concat([df, novo], ignore_index=True)
-                    salvar_aba(df, "modelos_bgr")
-
-                    st.success("Modelo BGR enviado com sucesso!")
+                    if url_img:
+                        inserir_registro("modelos_bgr", {
+                            "nome":         nome_modelo,
+                            "departamento": departamento_modelo,
+                            "descricao":    descricao_modelo,
+                            "imagem":       nome_imagem_salva,
+                            "arquivo_bgr":  nome_bgr_salvo,
+                            "status":       status_modelo,
+                            "data_upload":  datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        })
+                        st.success("Modelo BGR enviado com sucesso!")
+                    else:
+                        st.error("Falha no upload da imagem. Verifique o bucket no Supabase.")
                 else:
                     st.warning("Preencha nome, departamento e selecione uma imagem de prévia.")
 
@@ -811,7 +773,7 @@ elif pagina == "Painel Administrativo":
     with aba3:
         st.subheader("📑 Histórico de Escolhas BGR")
 
-        df = carregar_aba("escolhas_bgr")
+        df = carregar_tabela("escolhas_bgr")
 
         if df.empty:
             st.info("Nenhuma escolha registrada ainda.")
@@ -854,7 +816,7 @@ elif pagina == "Painel Administrativo":
     with aba4:
         st.subheader("📥 Solicitações de acesso aos BGR")
 
-        df = carregar_aba("solicitacoes_bgr")
+        df = carregar_tabela("solicitacoes_bgr")
 
         if df.empty:
             st.info("Nenhuma solicitação registrada ainda.")
@@ -911,15 +873,15 @@ elif pagina == "Painel Administrativo":
             ["Conversores", "Modelos BGR", "Histórico de Escolhas", "Solicitações BGR"]
         )
 
-        mapa_abas = {
+        mapa_tabelas = {
             "Conversores":           "conversores",
             "Modelos BGR":           "modelos_bgr",
             "Histórico de Escolhas": "escolhas_bgr",
             "Solicitações BGR":      "solicitacoes_bgr",
         }
 
-        nome_aba_selecionada = mapa_abas[tipo_dado]
-        df_base = carregar_aba(nome_aba_selecionada)
+        nome_tabela = mapa_tabelas[tipo_dado]
+        df_base     = carregar_tabela(nome_tabela)
 
         st.write("Edite os dados diretamente na tabela abaixo:")
 
@@ -930,8 +892,7 @@ elif pagina == "Painel Administrativo":
         )
 
         if st.button("Salvar alterações"):
-            salvar_aba(df_editado, nome_aba_selecionada)
-            st.success("Alterações salvas com sucesso no Google Sheets!")
+            salvar_tabela_completa(nome_tabela, df_editado)
 
     # -----------------------------------------------------
     # ABA 6 - EXPORTAÇÕES
@@ -940,15 +901,15 @@ elif pagina == "Painel Administrativo":
     with aba6:
         st.subheader("📦 Exportar bases para Excel")
 
-        df_conversores  = carregar_aba("conversores")
-        df_modelos      = carregar_aba("modelos_bgr")
-        df_escolhas     = carregar_aba("escolhas_bgr")
-        df_solicitacoes = carregar_aba("solicitacoes_bgr")
+        df_conversores  = carregar_tabela("conversores")
+        df_modelos      = carregar_tabela("modelos_bgr")
+        df_escolhas     = carregar_tabela("escolhas_bgr")
+        df_solicitacoes = carregar_tabela("solicitacoes_bgr")
 
         excel = gerar_excel_download({
-            "Conversores":    df_conversores,
-            "Modelos_BGR":    df_modelos,
-            "Escolhas_BGR":   df_escolhas,
+            "Conversores":      df_conversores,
+            "Modelos_BGR":      df_modelos,
+            "Escolhas_BGR":     df_escolhas,
             "Solicitacoes_BGR": df_solicitacoes
         })
 
