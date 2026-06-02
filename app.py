@@ -6,6 +6,7 @@ import json
 import ast
 from datetime import datetime
 from io import BytesIO
+from urllib.parse import quote, unquote
 from supabase import create_client, Client
 
 # =========================================================
@@ -180,6 +181,15 @@ section[data-testid="stSidebar"] {
     font-size: 12px;
 }
 
+.card-link,
+.card-link:visited,
+.card-link:hover,
+.card-link:active {
+    display: block;
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
 .setor-card {
     padding: 22px;
     border-radius: 14px;
@@ -188,6 +198,7 @@ section[data-testid="stSidebar"] {
     text-align: center;
     box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     min-height: 205px;
+    cursor: pointer;
     transition: all 0.2s ease-in-out;
 }
 
@@ -211,9 +222,7 @@ section[data-testid="stSidebar"] {
 }
 
 .setor-card p {
-    color: var(--tr-text-secondary);
     margin: 3px 0;
-    font-size: 14px;
 }
 
 .setor-card .total-tools {
@@ -1384,7 +1393,7 @@ def render_central_ferramentas():
                             elif not cod_u:
                                 st.warning("Informe o código cliente Domínio.")
                             else:
-                                inserir_registro("solicitacoes_bgr", {
+                                ok = inserir_registro("solicitacoes_bgr", {
                                     "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                                     "nome_usuario": nome_u,
                                     "email_usuario": email_u,
@@ -1397,8 +1406,9 @@ def render_central_ferramentas():
                                     "status": "Liberado"
                                 })
 
-                                st.session_state[f"central_bgr_liberado_{chave}"] = True
-                                st.success("Solicitação registrada! Download liberado.")
+                                if ok:
+                                    st.session_state[f"central_bgr_liberado_{chave}"] = True
+                                    st.success("Solicitação registrada! Download liberado.")
 
                     if st.session_state.get(f"central_bgr_liberado_{chave}", False):
                         bgr_bytes = baixar_arquivo(BUCKET_BGR, arquivo_bgr)
@@ -1754,19 +1764,48 @@ inicializar_conversores_padrao()
 mostrar_logo()
 
 # =========================================================
-# MENU
+# TRATAMENTO DO CLIQUE NOS CARDS VIA URL
+# IMPORTANTE:
+# Este bloco fica ANTES do st.sidebar.radio com key="menu_publico".
+# Assim evita o erro StreamlitAPIException ao alterar session_state.
 # =========================================================
-
-st.sidebar.write("---")
-st.sidebar.subheader("Menu público")
 
 opcoes_publicas = [
     "Início",
     "Central de Ferramentas e Relatórios"
 ]
 
+query_params = st.query_params
+
+if query_params.get("pagina") == "central":
+    dep_url = query_params.get("departamento", "Todos")
+
+    if isinstance(dep_url, list):
+        dep_url = dep_url[0]
+
+    dep_url = unquote(str(dep_url))
+
+    if dep_url not in ["Todos"] + DEPARTAMENTOS:
+        dep_url = "Todos"
+
+    st.session_state["departamento_central"] = dep_url
+    st.session_state["filtro_dep_central"] = dep_url
+    st.session_state["menu_publico"] = "Central de Ferramentas e Relatórios"
+
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
+
 if st.session_state.get("menu_publico") not in opcoes_publicas:
     st.session_state["menu_publico"] = "Início"
+
+# =========================================================
+# MENU
+# =========================================================
+
+st.sidebar.write("---")
+st.sidebar.subheader("Menu público")
 
 pagina_publica = st.sidebar.radio(
     "Selecione uma opção:",
@@ -1837,38 +1876,30 @@ if pagina == "Início":
                 qtd_bgr = len(df_modelos[df_modelos["departamento"] == dep])
 
             qtd_total = qtd_conv + qtd_bgr
+            dep_url = quote(dep, safe="")
 
             st.markdown(f"""
-            <div class="setor-card">
-                <h1>{icones[dep]}</h1>
-                <h4>{dep}</h4>
-                <p class="total-tools">{qtd_total} ferramenta(s)</p>
-                <p class="sub-tools">{qtd_conv} conversor(es)</p>
-                <p class="sub-tools">{qtd_bgr} BGR</p>
-            </div>
+            <a class="card-link" href="?pagina=central&departamento={dep_url}" target="_self">
+                <div class="setor-card">
+                    <h1>{icones[dep]}</h1>
+                    <h4>{dep}</h4>
+                    <p class="total-tools">{qtd_total} ferramenta(s)</p>
+                    <p class="sub-tools">{qtd_conv} conversor(es)</p>
+                    <p class="sub-tools">{qtd_bgr} BGR</p>
+                </div>
+            </a>
             """, unsafe_allow_html=True)
-
-            if st.button(
-                f"Ver {dep}",
-                key=f"abrir_dep_{dep}",
-                use_container_width=True
-            ):
-                st.session_state["departamento_central"] = dep
-                st.session_state["filtro_dep_central"] = dep
-                st.session_state["menu_publico"] = "Central de Ferramentas e Relatórios"
-                st.rerun()
 
     st.write("---")
 
-    if st.button(
-        "🔎 Ver todas as ferramentas e relatórios",
-        key="abrir_central_todos",
-        use_container_width=True
-    ):
-        st.session_state["departamento_central"] = "Todos"
-        st.session_state["filtro_dep_central"] = "Todos"
-        st.session_state["menu_publico"] = "Central de Ferramentas e Relatórios"
-        st.rerun()
+    st.markdown(
+        """
+        <a class="botao-link" href="?pagina=central&departamento=Todos" target="_self">
+            🔎 Ver todas as ferramentas e relatórios
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
 
 # =========================================================
 # CENTRAL DE FERRAMENTAS E RELATÓRIOS
@@ -2643,7 +2674,7 @@ elif pagina == "Painel Administrativo":
                                 unsafe_allow_html=True
                             )
                         else:
-                            st.markdown(f"**{nome_b}**")
+                            st.markdown(f"**{nome_b}")
 
                         st.caption(desc_b[:55] + "…" if len(desc_b) > 55 else desc_b)
 
