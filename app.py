@@ -797,7 +797,7 @@ def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plura
                 )
             else:
                 st.markdown(
-                    "<div class='sel-tip'>Marque itens individualmente ou use "Marcar filtrados".</div>",
+                    '<div class="sel-tip">Marque itens individualmente ou use <strong>Marcar filtrados</strong>.</div>',
                     unsafe_allow_html=True
                 )
 
