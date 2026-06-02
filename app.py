@@ -7,6 +7,7 @@ import ast
 from datetime import datetime
 from io import BytesIO
 from supabase import create_client, Client
+
 # =========================================================
 # CONFIGURAÇÃO GERAL
 # =========================================================
@@ -339,7 +340,6 @@ a:hover {
     color: var(--tr-danger-text);
 }
 
-/* Botão ➕/➖ compacto */
 div[data-testid="stButton"] button[kind="secondary"] {
     padding: 2px 8px !important;
     font-size: 16px !important;
@@ -347,10 +347,6 @@ div[data-testid="stButton"] button[kind="secondary"] {
     min-height: unset !important;
     border-radius: 6px !important;
 }
-
-/* =====================================================
-   MODO SELEÇÃO OTIMIZADO
-   ===================================================== */
 
 .sel-top {
     display: flex;
@@ -439,23 +435,32 @@ def carregar_tabela(tabela: str) -> pd.DataFrame:
         st.error(f"Erro ao carregar '{tabela}': {e}")
         return pd.DataFrame()
 
+
 def inserir_registro(tabela: str, dados: dict):
     try:
         get_supabase().table(tabela).insert(dados).execute()
+        return True
     except Exception as e:
         st.error(f"Erro ao inserir em '{tabela}': {e}")
+        return False
+
 
 def atualizar_registro(tabela: str, id_registro: int, dados: dict):
     try:
         get_supabase().table(tabela).update(dados).eq("id", id_registro).execute()
+        return True
     except Exception as e:
         st.error(f"Erro ao atualizar em '{tabela}': {e}")
+        return False
+
 
 def excluir_registro(tabela: str, id_registro: int):
     try:
         get_supabase().table(tabela).delete().eq("id", id_registro).execute()
+        return True
     except Exception as e:
         st.error(f"Erro ao excluir em '{tabela}': {e}")
+        return False
 
 # =========================================================
 # SUPABASE — STORAGE
@@ -482,11 +487,13 @@ def upload_arquivo(bucket, nome, dados_bytes, content_type):
         st.error(f"Erro no upload: {e}")
         return None
 
+
 def baixar_arquivo(bucket, nome):
     try:
         return get_supabase().storage.from_(bucket).download(nome)
     except Exception:
         return None
+
 
 def url_publica(bucket, nome):
     try:
@@ -498,6 +505,37 @@ def url_publica(bucket, nome):
 # AUDITORIA
 # =========================================================
 
+def _limpar_objeto_para_json(obj):
+    if obj is None:
+        return ""
+
+    if isinstance(obj, pd.Series):
+        return _limpar_objeto_para_json(obj.to_dict())
+
+    if isinstance(obj, dict):
+        return {str(k): _limpar_objeto_para_json(v) for k, v in obj.items()}
+
+    if isinstance(obj, (list, tuple, set)):
+        return [_limpar_objeto_para_json(v) for v in obj]
+
+    if isinstance(obj, (datetime, pd.Timestamp)):
+        return obj.strftime("%d/%m/%Y %H:%M:%S")
+
+    try:
+        if pd.isna(obj):
+            return ""
+    except Exception:
+        pass
+
+    if hasattr(obj, "item"):
+        try:
+            return obj.item()
+        except Exception:
+            pass
+
+    return obj
+
+
 def serializar_dados_auditoria(dados):
     if dados is None:
         return ""
@@ -506,23 +544,159 @@ def serializar_dados_auditoria(dados):
         return dados
 
     try:
-        return json.dumps(dados, ensure_ascii=False, default=str)
+        return json.dumps(
+            _limpar_objeto_para_json(dados),
+            ensure_ascii=False,
+            default=str
+        )
     except Exception:
         return str(dados)
 
 
-def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""):
+def _parse_dados_auditoria(valor):
+    if valor is None:
+        return {}
+
+    if isinstance(valor, dict):
+        return {str(k): _limpar_objeto_para_json(v) for k, v in valor.items()}
+
     try:
-        inserir_registro("auditoria", {
-            "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "acao": acao,
-            "tabela": tabela,
-            "descricao": descricao,
-            "dados_antes": serializar_dados_auditoria(dados_antes),
-            "dados_depois": serializar_dados_auditoria(dados_depois)
-        })
+        if pd.isna(valor):
+            return {}
+    except Exception:
+        pass
+
+    texto = str(valor).strip()
+
+    if not texto or texto.lower() in ["none", "null", "nan", "nat"]:
+        return {}
+
+    try:
+        obj = json.loads(texto)
+        if isinstance(obj, dict):
+            return {str(k): _limpar_objeto_para_json(v) for k, v in obj.items()}
+    except Exception:
+        pass
+
+    try:
+        texto_sanitizado = re.sub(r"\bnan\b", "None", texto, flags=re.IGNORECASE)
+        texto_sanitizado = re.sub(r"\bNaT\b", "None", texto_sanitizado)
+
+        obj = ast.literal_eval(texto_sanitizado)
+
+        if isinstance(obj, dict):
+            return {str(k): _limpar_objeto_para_json(v) for k, v in obj.items()}
+    except Exception:
+        pass
+
+    return {}
+
+
+def _formatar_valor_auditoria(valor):
+    if valor is None:
+        return ""
+
+    try:
+        if pd.isna(valor):
+            return ""
+    except Exception:
+        pass
+
+    valor = _limpar_objeto_para_json(valor)
+
+    if isinstance(valor, (dict, list, tuple, set)):
+        try:
+            return json.dumps(valor, ensure_ascii=False, default=str)
+        except Exception:
+            return str(valor)
+
+    return str(valor)
+
+
+def expandir_colunas_auditoria(df_auditoria: pd.DataFrame) -> pd.DataFrame:
+    if df_auditoria is None or df_auditoria.empty:
+        return pd.DataFrame()
+
+    df = df_auditoria.copy()
+
+    lista_antes = []
+    lista_depois = []
+    campos = set()
+
+    for _, row in df.iterrows():
+        antes = _parse_dados_auditoria(row.get("dados_antes", ""))
+        depois = _parse_dados_auditoria(row.get("dados_depois", ""))
+
+        lista_antes.append(antes)
+        lista_depois.append(depois)
+
+        campos.update(str(k) for k in antes.keys())
+        campos.update(str(k) for k in depois.keys())
+
+    campos_preferidos = [
+        "id",
+        "nome",
+        "departamento",
+        "descricao",
+        "url",
+        "status",
+        "imagem",
+        "arquivo_bgr",
+        "data_cadastro",
+        "data_upload"
+    ]
+
+    campos_ordenados = []
+
+    for campo in campos_preferidos:
+        if campo in campos:
+            campos_ordenados.append(campo)
+
+    outros_campos = sorted(
+        [campo for campo in campos if campo not in campos_ordenados],
+        key=lambda x: x.lower()
+    )
+
+    campos_ordenados.extend(outros_campos)
+
+    colunas_base = [
+        c for c in df.columns
+        if c not in ["dados_antes", "dados_depois"]
+    ]
+
+    df_saida = df[colunas_base].copy()
+
+    for campo in campos_ordenados:
+        df_saida[f"{campo}_antes"] = [
+            _formatar_valor_auditoria(antes.get(campo, ""))
+            for antes in lista_antes
+        ]
+
+        df_saida[f"{campo}_depois"] = [
+            _formatar_valor_auditoria(depois.get(campo, ""))
+            for depois in lista_depois
+        ]
+
+    return df_saida
+
+
+def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""):
+    payload = {
+        "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "acao": acao,
+        "tabela": tabela,
+        "descricao": descricao,
+        "dados_antes": serializar_dados_auditoria(dados_antes),
+        "dados_depois": serializar_dados_auditoria(dados_depois)
+    }
+
+    try:
+        get_supabase().table("auditoria").insert(payload).execute()
+        st.session_state.pop("_erro_auditoria", None)
+        return True
     except Exception as e:
-        st.warning(f"Auditoria não registrada: {e}")
+        st.session_state["_erro_auditoria"] = str(e)
+        return False
 
 # =========================================================
 # LIXEIRA
@@ -538,6 +712,7 @@ def adicionar_lixeira(tabela, registro):
         "excluido_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     })
 
+
 def mostrar_lixeira():
     lixeira = st.session_state.get("lixeira", [])
 
@@ -545,7 +720,7 @@ def mostrar_lixeira():
         return
 
     for i, item in enumerate(lixeira):
-        nome_reg = item["registro"].get("nome", f"Registro #{i+1}")
+        nome_reg = item["registro"].get("nome", f"Registro #{i + 1}")
 
         cm, cr, cf = st.columns([5, 1.5, 1])
 
@@ -559,18 +734,17 @@ def mostrar_lixeira():
             if st.button("↩️ Restaurar", key=f"restaurar_{i}"):
                 d = {k: v for k, v in item["registro"].items() if k != "id"}
 
-                inserir_registro(item["tabela"], d)
+                if inserir_registro(item["tabela"], d):
+                    registrar_auditoria(
+                        "RESTAURAÇÃO",
+                        item["tabela"],
+                        f"Restaurado: {nome_reg}",
+                        dados_depois=d
+                    )
 
-                registrar_auditoria(
-                    "RESTAURAÇÃO",
-                    item["tabela"],
-                    f"Restaurado: {nome_reg}",
-                    dados_depois=d
-                )
-
-                st.session_state["lixeira"].pop(i)
-                st.success(f'"{nome_reg}" restaurado!')
-                st.rerun()
+                    st.session_state["lixeira"].pop(i)
+                    st.success(f'"{nome_reg}" restaurado!')
+                    st.rerun()
 
         with cf:
             if st.button("✖", key=f"fechar_lixeira_{i}"):
@@ -587,7 +761,7 @@ def inicializar_conversores_padrao():
     if not df.empty:
         return
 
-    for c in [
+    conversores_padrao = [
         {
             "nome": "Gerador RPA TXT",
             "departamento": "Folha de Pagamento",
@@ -623,9 +797,12 @@ def inicializar_conversores_padrao():
             "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
             "status": "Ativo"
         },
-    ]:
+    ]
+
+    for c in conversores_padrao:
         c["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         inserir_registro("conversores", c)
+
 
 def status_html(status):
     if status == "Ativo":
@@ -635,17 +812,22 @@ def status_html(status):
 
     return '<span class="status-desenvolvimento">🔧 Em desenvolvimento</span>'
 
+
 def gerar_excel_download(dfs: dict):
     out = BytesIO()
 
     with pd.ExcelWriter(out, engine="openpyxl") as w:
         for nome, df in dfs.items():
+            if df is None:
+                df = pd.DataFrame()
             df.to_excel(w, index=False, sheet_name=nome[:31])
 
     return out.getvalue()
 
+
 def mostrar_logo():
     st.sidebar.markdown("### 🧩 Portal de Ferramentas")
+
 
 def nome_arquivo_seguro(nome):
     nome = unicodedata.normalize("NFKD", nome)
@@ -656,20 +838,25 @@ def nome_arquivo_seguro(nome):
 
     return p[0].replace(".", "_") + "." + p[1] if len(p) == 2 else nome
 
+
 def valor_texto(v):
     if v is None:
         return ""
 
-    if isinstance(v, float) and pd.isna(v):
-        return ""
+    try:
+        if pd.isna(v):
+            return ""
+    except Exception:
+        pass
 
     return str(v).strip()
+
 
 def email_valido(email):
     return "@" in str(email).strip() and "." in str(email).strip()
 
 # =========================================================
-# SELEÇÃO MÚLTIPLA — CORRIGIDA E OTIMIZADA
+# SELEÇÃO MÚLTIPLA
 # =========================================================
 
 def inicializar_selecao(key):
@@ -679,6 +866,7 @@ def inicializar_selecao(key):
         except Exception:
             st.session_state[key] = set()
 
+
 def _atualizar_checkboxes_por_prefixo(prefixo_chk, valor=False):
     if not prefixo_chk:
         return
@@ -687,10 +875,12 @@ def _atualizar_checkboxes_por_prefixo(prefixo_chk, valor=False):
         if str(k).startswith(prefixo_chk):
             st.session_state[k] = bool(valor)
 
+
 def limpar_selecao(key, prefixo_chk=None):
     inicializar_selecao(key)
     st.session_state[key] = set()
     _atualizar_checkboxes_por_prefixo(prefixo_chk, False)
+
 
 def selecionar_todos_filtrados(key, df_filtrado, prefixo_chk=None):
     inicializar_selecao(key)
@@ -708,6 +898,7 @@ def selecionar_todos_filtrados(key, df_filtrado, prefixo_chk=None):
         for id_item in ids:
             st.session_state[f"{prefixo_chk}{int(id_item)}"] = True
 
+
 def sincronizar_checkbox_selecao(key_ids, key_checkbox, id_item):
     inicializar_selecao(key_ids)
 
@@ -718,13 +909,13 @@ def sincronizar_checkbox_selecao(key_ids, key_checkbox, id_item):
     else:
         st.session_state[key_ids].discard(id_item)
 
+
 def checkbox_linha_selecao(key_ids, prefixo_chk, id_item):
     inicializar_selecao(key_ids)
 
     id_item = int(id_item)
     key_checkbox = f"{prefixo_chk}{id_item}"
 
-    # Mantém o checkbox visual sincronizado com o set de IDs.
     st.session_state[key_checkbox] = id_item in st.session_state[key_ids]
 
     st.checkbox(
@@ -738,17 +929,20 @@ def checkbox_linha_selecao(key_ids, prefixo_chk, id_item):
 
     return st.session_state.get(key_checkbox, False)
 
+
 def controle_modo_selecao(label, key, help_text):
     if hasattr(st, "toggle"):
         return st.toggle(label, key=key, help=help_text)
 
     return st.checkbox(label, key=key, help=help_text)
 
+
 def container_com_borda():
     try:
         return st.container(border=True)
     except TypeError:
         return st.container()
+
 
 def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plural):
     inicializar_selecao(key_ids)
@@ -825,8 +1019,9 @@ _COLS = [0.7, 2.8, 3.2, 2.0, 1.4, 1.3]
 _CAB = ["Expandir /\nOcultar", "Nome", "Descrição", "Departamento", "Status", "Acesso"]
 _CAB_STYLE = "font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em"
 
+
 def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
-    if df_filtrado.empty:
+    if df_filtrado is None or df_filtrado.empty:
         st.info("Nenhum item encontrado para os filtros selecionados.")
         return
 
@@ -1060,7 +1255,10 @@ if pagina == "Início":
 
     for i, dep in enumerate(DEPARTAMENTOS):
         with cols[i]:
-            qtd = len(df_conversores[df_conversores["departamento"] == dep]) if not df_conversores.empty else 0
+            qtd = 0
+
+            if not df_conversores.empty and "departamento" in df_conversores.columns:
+                qtd = len(df_conversores[df_conversores["departamento"] == dep])
 
             st.markdown(f"""
             <div class="setor-card">
@@ -1107,8 +1305,8 @@ elif pagina == "Conversores":
     if not df_f.empty:
         if busca_conv:
             df_f = df_f[
-                df_f["nome"].str.contains(busca_conv, case=False, na=False) |
-                df_f["descricao"].str.contains(busca_conv, case=False, na=False)
+                df_f["nome"].astype(str).str.contains(busca_conv, case=False, na=False) |
+                df_f["descricao"].astype(str).str.contains(busca_conv, case=False, na=False)
             ]
 
         if filtro_dep_conv != "Todos":
@@ -1160,8 +1358,8 @@ elif pagina == "Relatórios BGR":
 
         if busca_bgr:
             df_bgr_f = df_bgr_f[
-                df_bgr_f["nome"].str.contains(busca_bgr, case=False, na=False) |
-                df_bgr_f["descricao"].str.contains(busca_bgr, case=False, na=False)
+                df_bgr_f["nome"].astype(str).str.contains(busca_bgr, case=False, na=False) |
+                df_bgr_f["descricao"].astype(str).str.contains(busca_bgr, case=False, na=False)
             ]
 
         if filtro_dep_bgr != "Todos":
@@ -1203,7 +1401,12 @@ elif pagina == "Painel Administrativo":
     # ABA 1 — CONVERSORES
     # =====================================================
 
-   if "modo_conv" not in st.session_state:
+    with aba1:
+        st.subheader("🛠️ Gerenciar Conversores")
+
+        df_conv = carregar_tabela("conversores")
+
+        if "modo_conv" not in st.session_state:
             st.session_state["modo_conv"] = "cadastro"
 
         if "editando_conv" not in st.session_state:
@@ -1335,16 +1538,15 @@ elif pagina == "Painel Administrativo":
                     if modo_conv == "cadastro":
                         dados_salvar_conv["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-                        inserir_registro("conversores", dados_salvar_conv)
+                        if inserir_registro("conversores", dados_salvar_conv):
+                            registrar_auditoria(
+                                "CADASTRO",
+                                "conversores",
+                                f"Conversor cadastrado: {dados_salvar_conv['nome']}",
+                                dados_depois=dados_salvar_conv
+                            )
 
-                        registrar_auditoria(
-                            "CADASTRO",
-                            "conversores",
-                            f"Conversor cadastrado: {dados_salvar_conv['nome']}",
-                            dados_depois=dados_salvar_conv
-                        )
-
-                        st.success("Conversor cadastrado com sucesso!")
+                            st.success("Conversor cadastrado com sucesso!")
 
                     else:
                         dados_antes_conv = dados_conv_edicao.copy()
@@ -1352,27 +1554,267 @@ elif pagina == "Painel Administrativo":
                         dados_depois_conv = dados_antes_conv.copy()
                         dados_depois_conv.update(dados_salvar_conv)
 
-                        atualizar_registro(
+                        if atualizar_registro(
                             "conversores",
                             int(id_edit_conv),
                             dados_salvar_conv
-                        )
+                        ):
+                            registrar_auditoria(
+                                "ALTERAÇÃO",
+                                "conversores",
+                                f"Conversor alterado: {dados_depois_conv['nome']}",
+                                dados_antes=dados_antes_conv,
+                                dados_depois=dados_depois_conv
+                            )
 
-                        registrar_auditoria(
-                            "ALTERAÇÃO",
-                            "conversores",
-                            f"Conversor alterado: {dados_depois_conv['nome']}",
-                            dados_antes=dados_antes_conv,
-                            dados_depois=dados_depois_conv
-                        )
-
-                        st.success("Conversor alterado com sucesso!")
+                            st.success("Conversor alterado com sucesso!")
 
                     st.session_state["modo_conv"] = "cadastro"
                     st.session_state["editando_conv"] = None
                     st.session_state["expandir_form_conv"] = False
-
                     st.rerun()
+
+        if df_conv.empty:
+            st.info("Nenhum conversor cadastrado.")
+        else:
+            fc1, fc2, fc3 = st.columns([3, 2, 2])
+
+            with fc1:
+                busca_admin_conv = st.text_input(
+                    "🔍 Buscar conversor:",
+                    key="busca_admin_conv"
+                )
+
+            with fc2:
+                filtro_dep_admin_conv = st.selectbox(
+                    "Departamento:",
+                    ["Todos"] + DEPARTAMENTOS,
+                    key="fdep_admin_conv"
+                )
+
+            with fc3:
+                filtro_status_admin_conv = st.selectbox(
+                    "Status:",
+                    ["Todos"] + STATUS_FERRAMENTAS,
+                    key="fstatus_admin_conv"
+                )
+
+            df_conv_f = df_conv.copy()
+
+            if busca_admin_conv:
+                df_conv_f = df_conv_f[
+                    df_conv_f["nome"].astype(str).str.contains(busca_admin_conv, case=False, na=False) |
+                    df_conv_f["descricao"].astype(str).str.contains(busca_admin_conv, case=False, na=False)
+                ]
+
+            if filtro_dep_admin_conv != "Todos":
+                df_conv_f = df_conv_f[df_conv_f["departamento"] == filtro_dep_admin_conv]
+
+            if filtro_status_admin_conv != "Todos":
+                df_conv_f = df_conv_f[df_conv_f["status"] == filtro_status_admin_conv]
+
+            st.write("---")
+
+            inicializar_selecao("ids_sel_conv")
+
+            if st.session_state.pop("reset_chk_conv", False):
+                limpar_selecao("ids_sel_conv", "chk_conv_")
+
+            modo_sel_conv = controle_modo_selecao(
+                "Modo seleção em lote",
+                key="modo_sel_conv",
+                help_text="Ative para selecionar vários conversores e excluir em lote."
+            )
+
+            if not modo_sel_conv:
+                limpar_selecao("ids_sel_conv", "chk_conv_")
+                st.session_state.pop("popup_lote_conv", None)
+
+            if modo_sel_conv:
+                barra_selecao_lote(
+                    key_ids="ids_sel_conv",
+                    df_filtrado=df_conv_f,
+                    prefixo_chk="chk_conv_",
+                    sufixo_key="conv",
+                    nome_plural="conversor(es)"
+                )
+
+                st.markdown("<hr style='margin:14px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
+
+                hc = st.columns([0.45, 3.5, 1.8, 1.4, 0.8, 0.55, 0.55])
+
+                for h, col in zip(["Sel.", "Nome", "Departamento", "Status", "Acesso", "", ""], hc):
+                    col.markdown(f"**{h}**")
+
+            else:
+                hc = st.columns([3.5, 1.8, 1.4, 0.8, 0.55, 0.55])
+
+                for h, col in zip(["Nome", "Departamento", "Status", "Acesso", "", ""], hc):
+                    col.markdown(f"**{h}**")
+
+            st.markdown("<hr style='margin:4px 0 8px 0;border-color:#333'>", unsafe_allow_html=True)
+
+            if df_conv_f.empty:
+                st.info("Nenhum conversor encontrado com os filtros selecionados.")
+
+            for _, row_c in df_conv_f.iterrows():
+                id_c = int(row_c["id"])
+                nome_c = valor_texto(row_c.get("nome", ""))
+                dep_c = valor_texto(row_c.get("departamento", ""))
+                stat_c = valor_texto(row_c.get("status", ""))
+                desc_c = valor_texto(row_c.get("descricao", ""))
+                url_c = valor_texto(row_c.get("url", ""))
+
+                if modo_sel_conv:
+                    cc = st.columns([0.45, 3.5, 1.8, 1.4, 0.8, 0.55, 0.55])
+
+                    with cc[0]:
+                        checkbox_linha_selecao("ids_sel_conv", "chk_conv_", id_c)
+
+                    with cc[1]:
+                        if id_c in st.session_state["ids_sel_conv"]:
+                            st.markdown(
+                                f"**{nome_c}** <span class='row-selected-tag'>Selecionado</span>",
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.markdown(f"**{nome_c}**")
+
+                        st.caption(desc_c[:55] + "…" if len(desc_c) > 55 else desc_c)
+
+                    with cc[2]:
+                        st.write(dep_c)
+
+                    with cc[3]:
+                        st.markdown(status_html(stat_c), unsafe_allow_html=True)
+
+                    with cc[4]:
+                        if stat_c == "Ativo" and url_c:
+                            st.markdown(
+                                f'<a class="botao-link" href="{url_c}" target="_blank">Abrir</a>',
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.caption("-")
+
+                    with cc[5]:
+                        if st.button("✏️", key=f"edit_conv_{id_c}"):
+                            st.session_state.update({
+                                "modo_conv": "edicao",
+                                "editando_conv": id_c,
+                                "expandir_form_conv": True
+                            })
+                            st.rerun()
+
+                    with cc[6]:
+                        if st.button("🗑️", key=f"del_conv_{id_c}"):
+                            st.session_state[f"popup_conv_{id_c}"] = True
+
+                else:
+                    cc = st.columns([3.5, 1.8, 1.4, 0.8, 0.55, 0.55])
+
+                    with cc[0]:
+                        st.markdown(f"**{nome_c}**")
+                        st.caption(desc_c[:55] + "…" if len(desc_c) > 55 else desc_c)
+
+                    with cc[1]:
+                        st.write(dep_c)
+
+                    with cc[2]:
+                        st.markdown(status_html(stat_c), unsafe_allow_html=True)
+
+                    with cc[3]:
+                        if stat_c == "Ativo" and url_c:
+                            st.markdown(
+                                f'<a class="botao-link" href="{url_c}" target="_blank">Abrir</a>',
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.caption("-")
+
+                    with cc[4]:
+                        if st.button("✏️", key=f"edit_conv_{id_c}"):
+                            st.session_state.update({
+                                "modo_conv": "edicao",
+                                "editando_conv": id_c,
+                                "expandir_form_conv": True
+                            })
+                            st.rerun()
+
+                    with cc[5]:
+                        if st.button("🗑️", key=f"del_conv_{id_c}"):
+                            st.session_state[f"popup_conv_{id_c}"] = True
+
+                if st.session_state.get(f"popup_conv_{id_c}", False):
+                    st.warning(f"⚠️ Excluir **{nome_c}**?")
+
+                    csc, cnc, _ = st.columns([1, 1, 7])
+
+                    with csc:
+                        if st.button("✅ Sim", key=f"sim_conv_{id_c}"):
+                            adicionar_lixeira("conversores", row_c.to_dict())
+
+                            if excluir_registro("conversores", id_c):
+                                registrar_auditoria(
+                                    "EXCLUSÃO",
+                                    "conversores",
+                                    f"Conversor excluído: {nome_c}",
+                                    dados_antes=row_c.to_dict()
+                                )
+
+                            st.session_state.pop(f"popup_conv_{id_c}", None)
+                            st.session_state["ids_sel_conv"].discard(id_c)
+                            st.rerun()
+
+                    with cnc:
+                        if st.button("❌ Não", key=f"nao_conv_{id_c}"):
+                            st.session_state.pop(f"popup_conv_{id_c}", None)
+                            st.rerun()
+
+            ids_sel_conv = list(st.session_state.get("ids_sel_conv", set()))
+
+            if st.session_state.get("popup_lote_conv") and ids_sel_conv:
+                nomes_l = df_conv[df_conv["id"].isin(ids_sel_conv)]["nome"].astype(str).tolist()
+
+                st.warning(
+                    f"⚠️ Confirmar exclusão de **{len(ids_sel_conv)} conversor(es)**: "
+                    f"**{', '.join(nomes_l)}**?"
+                )
+
+                cslc, cnlc, _ = st.columns([1, 1, 7])
+
+                with cslc:
+                    if st.button("✅ Confirmar", key="conf_lote_conv"):
+                        for id_l in ids_sel_conv:
+                            registro_lote = df_conv[df_conv["id"] == int(id_l)]
+
+                            if registro_lote.empty:
+                                continue
+
+                            r = registro_lote.iloc[0]
+                            nome_item = valor_texto(r.get("nome", ""))
+
+                            adicionar_lixeira("conversores", r.to_dict())
+
+                            if excluir_registro("conversores", int(id_l)):
+                                registrar_auditoria(
+                                    "EXCLUSÃO EM LOTE",
+                                    "conversores",
+                                    f"Conversor excluído em lote: {nome_item}",
+                                    dados_antes=r.to_dict()
+                                )
+
+                        st.session_state["ids_sel_conv"] = set()
+                        st.session_state["reset_chk_conv"] = True
+                        st.session_state.pop("popup_lote_conv", None)
+
+                        st.success("Conversores excluídos!")
+                        st.rerun()
+
+                with cnlc:
+                    if st.button("❌ Cancelar", key="canc_lote_conv"):
+                        st.session_state.pop("popup_lote_conv", None)
+                        st.rerun()
 
     # =====================================================
     # ABA 2 — MODELOS BGR
@@ -1382,10 +1824,6 @@ elif pagina == "Painel Administrativo":
         st.subheader("📄 Gerenciar Modelos BGR")
 
         df_bgr = carregar_tabela("modelos_bgr")
-
-         # =====================================================
-        # FORMULÁRIO — CADASTRAR / EDITAR MODELO BGR
-        # =====================================================
 
         if "modo_bgr" not in st.session_state:
             st.session_state["modo_bgr"] = "cadastro"
@@ -1568,16 +2006,15 @@ elif pagina == "Painel Administrativo":
                     if modo_bgr == "cadastro":
                         dados_salvar_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-                        inserir_registro("modelos_bgr", dados_salvar_bgr)
+                        if inserir_registro("modelos_bgr", dados_salvar_bgr):
+                            registrar_auditoria(
+                                "CADASTRO",
+                                "modelos_bgr",
+                                f"Relatório BGR cadastrado: {dados_salvar_bgr['nome']}",
+                                dados_depois=dados_salvar_bgr
+                            )
 
-                        registrar_auditoria(
-                            "CADASTRO",
-                            "modelos_bgr",
-                            f"Relatório BGR cadastrado: {dados_salvar_bgr['nome']}",
-                            dados_depois=dados_salvar_bgr
-                        )
-
-                        st.success("Modelo BGR cadastrado com sucesso!")
+                            st.success("Modelo BGR cadastrado com sucesso!")
 
                     else:
                         dados_antes_bgr = dados_bgr_edicao.copy()
@@ -1588,26 +2025,24 @@ elif pagina == "Painel Administrativo":
                         dados_depois_bgr = dados_antes_bgr.copy()
                         dados_depois_bgr.update(dados_salvar_bgr)
 
-                        atualizar_registro(
+                        if atualizar_registro(
                             "modelos_bgr",
                             int(id_edit_bgr),
                             dados_salvar_bgr
-                        )
+                        ):
+                            registrar_auditoria(
+                                "ALTERAÇÃO",
+                                "modelos_bgr",
+                                f"Relatório BGR alterado: {dados_depois_bgr['nome']}",
+                                dados_antes=dados_antes_bgr,
+                                dados_depois=dados_depois_bgr
+                            )
 
-                        registrar_auditoria(
-                            "ALTERAÇÃO",
-                            "modelos_bgr",
-                            f"Relatório BGR alterado: {dados_depois_bgr['nome']}",
-                            dados_antes=dados_antes_bgr,
-                            dados_depois=dados_depois_bgr
-                        )
-
-                        st.success("Modelo BGR alterado com sucesso!")
+                            st.success("Modelo BGR alterado com sucesso!")
 
                     st.session_state["modo_bgr"] = "cadastro"
                     st.session_state["editando_bgr"] = None
                     st.session_state["expandir_form_bgr"] = False
-
                     st.rerun()
 
         if df_bgr.empty:
@@ -1695,9 +2130,9 @@ elif pagina == "Painel Administrativo":
 
             for _, row_b in df_bgr_f.iterrows():
                 id_b = int(row_b["id"])
-                nome_b = valor_texto(row_b["nome"])
-                dep_b = valor_texto(row_b["departamento"])
-                stat_b = valor_texto(row_b["status"])
+                nome_b = valor_texto(row_b.get("nome", ""))
+                dep_b = valor_texto(row_b.get("departamento", ""))
+                stat_b = valor_texto(row_b.get("status", ""))
                 img_b = valor_texto(row_b.get("imagem", ""))
                 desc_b = valor_texto(row_b.get("descricao", ""))
 
@@ -1785,18 +2220,17 @@ elif pagina == "Painel Administrativo":
                     with csb:
                         if st.button("✅ Sim", key=f"sim_bgr_{id_b}"):
                             adicionar_lixeira("modelos_bgr", row_b.to_dict())
-                            excluir_registro("modelos_bgr", id_b)
 
-                           registrar_auditoria(
-                                "EXCLUSÃO",
-                                "modelos_bgr",
-                                f"Relatório BGR excluído: {nome_b}",
-                                dados_antes=row_b.to_dict()
-                            )
+                            if excluir_registro("modelos_bgr", id_b):
+                                registrar_auditoria(
+                                    "EXCLUSÃO",
+                                    "modelos_bgr",
+                                    f"Relatório BGR excluído: {nome_b}",
+                                    dados_antes=row_b.to_dict()
+                                )
 
                             st.session_state.pop(f"popup_bgr_{id_b}", None)
                             st.session_state["ids_sel_bgr"].discard(id_b)
-
                             st.rerun()
 
                     with cnb:
@@ -1807,7 +2241,7 @@ elif pagina == "Painel Administrativo":
             ids_sel_bgr = list(st.session_state.get("ids_sel_bgr", set()))
 
             if st.session_state.get("popup_lote_bgr") and ids_sel_bgr:
-                nomes_lb = df_bgr[df_bgr["id"].isin(ids_sel_bgr)]["nome"].tolist()
+                nomes_lb = df_bgr[df_bgr["id"].isin(ids_sel_bgr)]["nome"].astype(str).tolist()
 
                 st.warning(
                     f"⚠️ Confirmar exclusão de **{len(ids_sel_bgr)} modelo(s) BGR**: "
@@ -1819,18 +2253,23 @@ elif pagina == "Painel Administrativo":
                 with cslb:
                     if st.button("✅ Confirmar", key="conf_lote_bgr"):
                         for id_lb in ids_sel_bgr:
-                            r_b = df_bgr[df_bgr["id"] == id_lb].iloc[0]
+                            registro_lote_bgr = df_bgr[df_bgr["id"] == int(id_lb)]
+
+                            if registro_lote_bgr.empty:
+                                continue
+
+                            r_b = registro_lote_bgr.iloc[0]
                             nome_item = valor_texto(r_b.get("nome", ""))
-                        
+
                             adicionar_lixeira("modelos_bgr", r_b.to_dict())
-                            excluir_registro("modelos_bgr", int(id_lb))
-                        
-                            registrar_auditoria(
-                                "EXCLUSÃO EM LOTE",
-                                "modelos_bgr",
-                                f"Relatório BGR excluído em lote: {nome_item}",
-                                dados_antes=r_b.to_dict()
-                            )
+
+                            if excluir_registro("modelos_bgr", int(id_lb)):
+                                registrar_auditoria(
+                                    "EXCLUSÃO EM LOTE",
+                                    "modelos_bgr",
+                                    f"Relatório BGR excluído em lote: {nome_item}",
+                                    dados_antes=r_b.to_dict()
+                                )
 
                         st.session_state["ids_sel_bgr"] = set()
                         st.session_state["reset_chk_bgr"] = True
@@ -1931,6 +2370,7 @@ elif pagina == "Painel Administrativo":
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 key="dl_excel_all"
             )
+
     # =====================================================
     # ABA 5 — AUDITORIA
     # =====================================================
