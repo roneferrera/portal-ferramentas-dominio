@@ -123,12 +123,12 @@ a:hover { color: var(--tr-orange-dark); }
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(
-        st.secrets["SUPABASE_URL"],
+        "https://vmqzxlorakaivjluvsze.supabase.co",
         st.secrets["SUPABASE_KEY"]
     )
 
 # =========================================================
-# SUPABASE — BANCO DE DADOS (tabelas)
+# SUPABASE — BANCO DE DADOS
 # =========================================================
 
 def carregar_tabela(tabela: str) -> pd.DataFrame:
@@ -139,7 +139,7 @@ def carregar_tabela(tabela: str) -> pd.DataFrame:
             return pd.DataFrame(response.data)
         return pd.DataFrame()
     except Exception as e:
-        st.error(f"Erro ao carregar tabela '{tabela}': {e}")
+        st.error(f"Erro ao carregar '{tabela}': {e}")
         return pd.DataFrame()
 
 
@@ -151,93 +151,51 @@ def inserir_registro(tabela: str, dados: dict):
         st.error(f"Erro ao inserir em '{tabela}': {e}")
 
 
-def atualizar_registro(tabela: str, id_registro: int, dados: dict):
-    try:
-        sb = get_supabase()
-        sb.table(tabela).update(dados).eq("id", id_registro).execute()
-    except Exception as e:
-        st.error(f"Erro ao atualizar em '{tabela}': {e}")
-
-
-def deletar_registro(tabela: str, id_registro: int):
-    try:
-        sb = get_supabase()
-        sb.table(tabela).delete().eq("id", id_registro).execute()
-    except Exception as e:
-        st.error(f"Erro ao deletar em '{tabela}': {e}")
-
-
 def salvar_tabela_completa(tabela: str, df: pd.DataFrame):
-    """
-    Usado no Gerenciar Dados: apaga tudo e reinserere o df editado.
-    Preserva apenas colunas que existem na tabela (ignora 'id' gerado pelo Supabase).
-    """
     try:
         sb = get_supabase()
-
-        # Busca todos os ids existentes e deleta
         existentes = sb.table(tabela).select("id").execute()
         for row in existentes.data:
             sb.table(tabela).delete().eq("id", row["id"]).execute()
-
-        # Reinsere linha a linha
         df_limpo = df.drop(columns=["id"], errors="ignore")
         for _, row in df_limpo.iterrows():
             registro = {k: (None if pd.isna(v) else v) for k, v in row.items()}
             sb.table(tabela).insert(registro).execute()
-
         st.success("Alterações salvas com sucesso no Supabase!")
     except Exception as e:
-        st.error(f"Erro ao salvar tabela '{tabela}': {e}")
+        st.error(f"Erro ao salvar '{tabela}': {e}")
 
 # =========================================================
-# SUPABASE — STORAGE (arquivos)
+# SUPABASE — STORAGE
 # =========================================================
 
 def upload_arquivo(bucket: str, nome_arquivo: str, bytes_arquivo: bytes, content_type: str) -> str | None:
-    """
-    Faz upload do arquivo no Supabase Storage.
-    Retorna a URL pública do arquivo ou None em caso de erro.
-    """
     try:
         sb = get_supabase()
-
-        # Remove arquivo anterior com mesmo nome se existir
         try:
             sb.storage.from_(bucket).remove([nome_arquivo])
         except Exception:
             pass
-
         sb.storage.from_(bucket).upload(
             path=nome_arquivo,
             file=bytes_arquivo,
             file_options={"content-type": content_type, "upsert": "true"}
         )
-
-        url = sb.storage.from_(bucket).get_public_url(nome_arquivo)
-        return url
-
+        return sb.storage.from_(bucket).get_public_url(nome_arquivo)
     except Exception as e:
-        st.error(f"Erro ao fazer upload para '{bucket}/{nome_arquivo}': {e}")
+        st.error(f"Erro no upload '{bucket}/{nome_arquivo}': {e}")
         return None
 
 
 def baixar_arquivo(bucket: str, nome_arquivo: str) -> bytes | None:
-    """
-    Baixa o arquivo do Supabase Storage e retorna os bytes.
-    """
     try:
         sb = get_supabase()
-        response = sb.storage.from_(bucket).download(nome_arquivo)
-        return response
+        return sb.storage.from_(bucket).download(nome_arquivo)
     except Exception:
         return None
 
 
 def url_publica(bucket: str, nome_arquivo: str) -> str:
-    """
-    Retorna a URL pública de um arquivo no Supabase Storage.
-    """
     try:
         sb = get_supabase()
         return sb.storage.from_(bucket).get_public_url(nome_arquivo)
@@ -249,13 +207,9 @@ def url_publica(bucket: str, nome_arquivo: str) -> str:
 # =========================================================
 
 def inicializar_conversores_padrao():
-    """
-    Insere os conversores padrão se a tabela estiver vazia.
-    """
     df = carregar_tabela("conversores")
     if not df.empty:
         return
-
     conversores_padrao = [
         {
             "nome": "Gerador RPA TXT",
@@ -298,7 +252,6 @@ def inicializar_conversores_padrao():
             "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         },
     ]
-
     for c in conversores_padrao:
         inserir_registro("conversores", c)
 
@@ -386,7 +339,6 @@ if pagina == "Início":
     df_solicitacoes = carregar_tabela("solicitacoes_bgr")
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
         st.metric("Conversores cadastrados", len(df_conversores))
     with col2:
@@ -406,7 +358,6 @@ if pagina == "Início":
     }
 
     cols = st.columns(5)
-
     for i, dep in enumerate(DEPARTAMENTOS):
         with cols[i]:
             qtd = (
@@ -431,17 +382,10 @@ elif pagina == "Conversores":
     df = carregar_tabela("conversores")
 
     col1, col2 = st.columns(2)
-
     with col1:
-        filtro_departamento = st.selectbox(
-            "Filtrar por departamento:",
-            ["Todos"] + DEPARTAMENTOS
-        )
+        filtro_departamento = st.selectbox("Filtrar por departamento:", ["Todos"] + DEPARTAMENTOS)
     with col2:
-        filtro_status = st.selectbox(
-            "Filtrar por status:",
-            ["Todos"] + STATUS_FERRAMENTAS
-        )
+        filtro_status = st.selectbox("Filtrar por status:", ["Todos"] + STATUS_FERRAMENTAS)
 
     df_filtrado = df.copy()
 
@@ -491,13 +435,12 @@ elif pagina == "Relatórios BGR":
     )
 
     col_filtro1, col_filtro2 = st.columns([1, 2])
-
     with col_filtro1:
         departamento = st.selectbox("Selecione o departamento:", DEPARTAMENTOS)
     with col_filtro2:
         pesquisa = st.text_input(
             "Pesquisar no nome ou descrição do BGR:",
-            placeholder="Exemplo: folha, fiscal, impostos..."
+            placeholder="Exemplo: folha, fiscal, impostos, balancete, honorários..."
         )
 
     if not df_modelos.empty:
@@ -528,12 +471,10 @@ elif pagina == "Relatórios BGR":
             nome_bgr         = valor_texto(modelo_info.get("arquivo_bgr", ""))
 
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-
             col_img, col_desc, col_acao = st.columns([1.2, 2.5, 1.2])
 
             with col_img:
                 st.markdown(f"### {nome_modelo}")
-
                 if nome_imagem:
                     img_url = url_publica(BUCKET_IMAGENS, nome_imagem)
                     if img_url:
@@ -557,7 +498,6 @@ elif pagina == "Relatórios BGR":
 
             with col_acao:
                 st.markdown("#### Acesso")
-
                 if nome_bgr:
                     if st.button("Solicitar acesso", key=f"solicitar_modelo_{index}"):
                         st.session_state["modelo_bgr_solicitado"]       = nome_modelo
@@ -622,13 +562,11 @@ elif pagina == "Relatórios BGR":
                         "observacao":              observacao,
                         "status":                  "Liberado"
                     })
-
                     st.session_state["download_bgr_liberado"] = True
                     st.success("Solicitação registrada com sucesso. Download liberado.")
 
         if st.session_state.get("download_bgr_liberado", False) and arquivo_solicitado:
             bgr_bytes = baixar_arquivo(BUCKET_BGR, arquivo_solicitado)
-
             if bgr_bytes:
                 st.download_button(
                     label="📥 Baixar .BGR",
@@ -712,7 +650,7 @@ elif pagina == "Painel Administrativo":
             descricao_modelo    = st.text_area("Descrição do modelo")
             status_modelo       = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
 
-            imagem      = st.file_uploader(
+            imagem = st.file_uploader(
                 "Selecione a imagem de prévia do relatório",
                 type=["png", "jpg", "jpeg"]
             )
@@ -727,10 +665,10 @@ elif pagina == "Painel Administrativo":
                 if nome_modelo and departamento_modelo and imagem:
                     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-                    # Upload da imagem no Supabase Storage
+                    # Upload da imagem
                     nome_imagem_salva = f"{timestamp}_{nome_arquivo_seguro(imagem.name)}"
-                    ext_imagem        = imagem.name.split(".")[-1].lower()
-                    content_type_img  = f"image/{ext_imagem}" if ext_imagem != "jpg" else "image/jpeg"
+                    ext               = imagem.name.split(".")[-1].lower()
+                    content_type_img  = "image/jpeg" if ext == "jpg" else f"image/{ext}"
 
                     url_img = upload_arquivo(
                         BUCKET_IMAGENS,
@@ -739,7 +677,7 @@ elif pagina == "Painel Administrativo":
                         content_type_img
                     )
 
-                    # Upload do arquivo BGR no Supabase Storage
+                    # Upload do BGR
                     nome_bgr_salvo = ""
                     if arquivo_bgr is not None:
                         nome_bgr_salvo = f"{timestamp}_{nome_arquivo_seguro(arquivo_bgr.name)}"
@@ -779,7 +717,6 @@ elif pagina == "Painel Administrativo":
             st.info("Nenhuma escolha registrada ainda.")
         else:
             col1, col2 = st.columns(2)
-
             with col1:
                 filtro_departamento = st.selectbox(
                     "Filtrar departamento:",
@@ -790,10 +727,8 @@ elif pagina == "Painel Administrativo":
                 busca_cliente = st.text_input("Buscar cliente:", key="busca_cliente_admin")
 
             df_filtrado = df.copy()
-
             if filtro_departamento != "Todos":
                 df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
-
             if busca_cliente:
                 df_filtrado = df_filtrado[
                     df_filtrado["cliente"].str.contains(busca_cliente, case=False, na=False)
@@ -822,7 +757,6 @@ elif pagina == "Painel Administrativo":
             st.info("Nenhuma solicitação registrada ainda.")
         else:
             col1, col2, col3 = st.columns(3)
-
             with col1:
                 filtro_departamento = st.selectbox(
                     "Filtrar departamento:",
@@ -835,20 +769,15 @@ elif pagina == "Painel Administrativo":
                 busca_email = st.text_input("Buscar e-mail:", key="sol_email_admin")
 
             df_filtrado = df.copy()
-
             if filtro_departamento != "Todos":
                 df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
-
             if busca_cnpj:
                 df_filtrado = df_filtrado[
                     df_filtrado["cnpj"].astype(str).str.contains(busca_cnpj, case=False, na=False)
                 ]
-
             if busca_email:
                 df_filtrado = df_filtrado[
-                    df_filtrado["email_usuario"].astype(str).str.contains(
-                        busca_email, case=False, na=False
-                    )
+                    df_filtrado["email_usuario"].astype(str).str.contains(busca_email, case=False, na=False)
                 ]
 
             st.dataframe(df_filtrado, use_container_width=True)
