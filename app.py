@@ -14,7 +14,7 @@ from supabase import create_client, Client
 # =========================================================
 
 st.set_page_config(
-    page_title="Portal de Ferramentas",
+    page_title="Central de Ferramentas e Relatórios",
     page_icon="🧩",
     layout="wide"
 )
@@ -496,7 +496,7 @@ def nome_arquivo_seguro(nome):
 
 
 def mostrar_logo():
-    st.sidebar.markdown("### 🧩 Portal de Ferramentas")
+    st.sidebar.markdown("### 🧩 Central de Ferramentas e Relatórios")
 
 
 def status_html(status):
@@ -1683,7 +1683,7 @@ pagina = "Painel Administrativo" if abrir_admin else pagina_publica
 # =========================================================
 
 if pagina == "Início":
-    st.title("🧩 Portal de Ferramentas")
+    st.title("🧩 Central de Ferramentas e Relatórios")
     st.write("Central de conversores, relatórios BGR e ferramentas internas por departamento.")
 
     df_conversores = carregar_tabela("conversores")
