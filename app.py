@@ -3,6 +3,10 @@ import pandas as pd
 import os
 from datetime import datetime
 from io import BytesIO
+import gspread
+from gspread_dataframe import get_as_dataframe, set_with_dataframe
+from google.oauth2.service_account import Credentials
+import base64
 
 # =========================================================
 # CONFIGURAÇÃO GERAL
@@ -18,16 +22,6 @@ st.set_page_config(
 # CONSTANTES
 # =========================================================
 
-PASTA_DADOS = "dados"
-PASTA_ASSETS = "assets"
-PASTA_UPLOADS_IMAGENS = "uploads/modelos_bgr/imagens"
-PASTA_UPLOADS_BGR = "uploads/modelos_bgr/arquivos_bgr"
-
-ARQUIVO_CONVERSORES = os.path.join(PASTA_DADOS, "conversores.csv")
-ARQUIVO_MODELOS_BGR = os.path.join(PASTA_DADOS, "modelos_bgr.csv")
-ARQUIVO_ESCOLHAS_BGR = os.path.join(PASTA_DADOS, "escolhas_bgr.csv")
-ARQUIVO_SOLICITACOES_BGR = os.path.join(PASTA_DADOS, "solicitacoes_bgr.csv")
-
 DEPARTAMENTOS = [
     "Fiscal",
     "Folha de Pagamento",
@@ -42,17 +36,15 @@ STATUS_FERRAMENTAS = [
     "Em desenvolvimento"
 ]
 
-# =========================================================
-# CRIAÇÃO DAS PASTAS
-# =========================================================
-
-os.makedirs(PASTA_DADOS, exist_ok=True)
-os.makedirs(PASTA_ASSETS, exist_ok=True)
-os.makedirs(PASTA_UPLOADS_IMAGENS, exist_ok=True)
-os.makedirs(PASTA_UPLOADS_BGR, exist_ok=True)
+ABAS_SHEETS = {
+    "conversores":       "conversores",
+    "modelos_bgr":       "modelos_bgr",
+    "escolhas_bgr":      "escolhas_bgr",
+    "solicitacoes_bgr":  "solicitacoes_bgr",
+}
 
 # =========================================================
-# ESTILO VISUAL - TEMA ESCURO THOMSON REUTERS / DOMÍNIO
+# ESTILO VISUAL
 # =========================================================
 
 st.markdown("""
@@ -61,450 +53,272 @@ st.markdown("""
     --tr-orange: #FF8000;
     --tr-orange-dark: #E66F00;
     --tr-orange-soft: rgba(255, 128, 0, 0.16);
-
     --tr-bg-main: #121212;
     --tr-bg-sidebar: #181818;
     --tr-bg-card: #1F1F1F;
     --tr-bg-card-hover: #252525;
     --tr-bg-input: #242424;
-
     --tr-border: #333333;
     --tr-border-light: #444444;
-
     --tr-text-main: #F5F5F5;
     --tr-text-secondary: #D0D0D0;
     --tr-text-muted: #A8A8A8;
-
     --tr-success-bg: rgba(46, 125, 50, 0.22);
     --tr-success-text: #81C784;
-
     --tr-warning-bg: rgba(255, 128, 0, 0.18);
     --tr-warning-text: #FFB366;
-
     --tr-info-bg: rgba(66, 165, 245, 0.18);
     --tr-info-text: #90CAF9;
 }
-
-.stApp {
-    background-color: var(--tr-bg-main);
-    color: var(--tr-text-main);
-}
-
-.block-container {
-    padding-top: 1.5rem;
-    padding-bottom: 3rem;
-}
-
-html, body, [class*="css"] {
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-p, span, label, div {
-    color: var(--tr-text-secondary);
-}
-
-h1 {
-    color: var(--tr-text-main);
-    font-weight: 700;
-    border-left: 6px solid var(--tr-orange);
-    padding-left: 14px;
-}
-
-h2, h3, h4 {
-    color: var(--tr-text-main);
-}
-
-section[data-testid="stSidebar"] {
-    background-color: var(--tr-bg-sidebar);
-    border-right: 1px solid var(--tr-border);
-}
-
+.stApp { background-color: var(--tr-bg-main); color: var(--tr-text-main); }
+.block-container { padding-top: 1.5rem; padding-bottom: 3rem; }
+html, body, [class*="css"] { font-family: Arial, Helvetica, sans-serif; }
+p, span, label, div { color: var(--tr-text-secondary); }
+h1 { color: var(--tr-text-main); font-weight: 700; border-left: 6px solid var(--tr-orange); padding-left: 14px; }
+h2, h3, h4 { color: var(--tr-text-main); }
+section[data-testid="stSidebar"] { background-color: var(--tr-bg-sidebar); border-right: 1px solid var(--tr-border); }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] div {
-    color: var(--tr-text-secondary);
-}
-
-section[data-testid="stSidebar"] hr {
-    border-color: var(--tr-border);
-}
-
-.card {
-    padding: 24px;
-    border-radius: 14px;
-    background-color: var(--tr-bg-card);
-    border: 1px solid var(--tr-border);
-    margin-bottom: 18px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-    transition: all 0.2s ease-in-out;
-}
-
-.card:hover {
-    background-color: var(--tr-bg-card-hover);
-    border-color: var(--tr-orange);
-    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
-}
-
-.card h3 {
-    margin-top: 0;
-    color: var(--tr-text-main);
-}
-
-.card p {
-    color: var(--tr-text-secondary);
-}
-
-.botao-link {
-    display: inline-block;
-    background-color: var(--tr-orange);
-    color: #FFFFFF !important;
-    padding: 10px 18px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    margin-top: 10px;
-}
-
-.botao-link:hover {
-    background-color: var(--tr-orange-dark);
-    color: #FFFFFF !important;
-}
-
-.stButton > button,
-.stDownloadButton > button {
-    background-color: var(--tr-orange);
-    color: #FFFFFF;
-    border: 1px solid var(--tr-orange);
-    border-radius: 8px;
-    font-weight: 700;
-}
-
-.stButton > button:hover,
-.stDownloadButton > button:hover {
-    background-color: var(--tr-orange-dark);
-    color: #FFFFFF;
-    border-color: var(--tr-orange-dark);
-}
-
-.stTextInput input,
-.stTextArea textarea {
-    background-color: var(--tr-bg-input);
-    color: var(--tr-text-main);
-    border: 1px solid var(--tr-border-light);
-    border-radius: 8px;
-}
-
-.stTextInput input::placeholder,
-.stTextArea textarea::placeholder {
-    color: var(--tr-text-muted);
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus {
-    border-color: var(--tr-orange) !important;
-    box-shadow: 0 0 0 1px var(--tr-orange) !important;
-}
-
-.stSelectbox div[data-baseweb="select"] {
-    background-color: var(--tr-bg-input);
-    color: var(--tr-text-main);
-    border-radius: 8px;
-}
-
-.stRadio label,
-.stCheckbox label {
-    color: var(--tr-text-secondary);
-}
-
-.status-ativo {
-    display: inline-block;
-    padding: 5px 11px;
-    border-radius: 999px;
-    background-color: var(--tr-success-bg);
-    color: var(--tr-success-text);
-    font-weight: 700;
-    font-size: 13px;
-}
-
-.status-manutencao {
-    display: inline-block;
-    padding: 5px 11px;
-    border-radius: 999px;
-    background-color: var(--tr-warning-bg);
-    color: var(--tr-warning-text);
-    font-weight: 700;
-    font-size: 13px;
-}
-
-.status-desenvolvimento {
-    display: inline-block;
-    padding: 5px 11px;
-    border-radius: 999px;
-    background-color: var(--tr-info-bg);
-    color: var(--tr-info-text);
-    font-weight: 700;
-    font-size: 13px;
-}
-
-.setor-card {
-    padding: 22px;
-    border-radius: 14px;
-    background-color: var(--tr-bg-card);
-    border: 1px solid var(--tr-border);
-    text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-    min-height: 140px;
-    transition: all 0.2s ease-in-out;
-}
-
-.setor-card:hover {
-    background-color: var(--tr-bg-card-hover);
-    border-color: var(--tr-orange);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
-}
-
-.setor-card h1 {
-    border-left: none;
-    padding-left: 0;
-    color: var(--tr-orange);
-}
-
-.setor-card h4 {
-    color: var(--tr-text-main);
-    margin-bottom: 4px;
-}
-
-.setor-card p {
-    color: var(--tr-text-muted);
-}
-
-.aviso-admin {
-    padding: 14px;
-    border-radius: 10px;
-    background-color: var(--tr-warning-bg);
-    color: var(--tr-warning-text);
-    border: 1px solid var(--tr-orange);
-}
-
-.aviso-admin strong {
-    color: var(--tr-warning-text);
-}
-
-[data-testid="stMetric"] {
-    background-color: var(--tr-bg-card);
-    border: 1px solid var(--tr-border);
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-}
-
-[data-testid="stMetricLabel"] {
-    color: var(--tr-text-muted);
-}
-
-[data-testid="stMetricValue"] {
-    color: var(--tr-orange);
-    font-weight: 700;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    border-bottom: 1px solid var(--tr-border);
-}
-
-.stTabs [data-baseweb="tab"] {
-    background-color: var(--tr-bg-card);
-    border-radius: 8px 8px 0 0;
-    color: var(--tr-text-secondary);
-    border: 1px solid var(--tr-border);
-    padding: 10px 16px;
-}
-
-.stTabs [aria-selected="true"] {
-    background-color: var(--tr-orange-soft);
-    color: var(--tr-orange);
-    border-bottom: 3px solid var(--tr-orange);
-    font-weight: 700;
-}
-
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--tr-border);
-    border-radius: 10px;
-    background-color: var(--tr-bg-card);
-}
-
-div[data-testid="stAlert"] {
-    border-radius: 10px;
-    border: 1px solid var(--tr-border);
-}
-
-div[data-testid="stExpander"] {
-    background-color: var(--tr-bg-card);
-    border: 1px solid var(--tr-border);
-    border-radius: 10px;
-}
-
-[data-testid="stFileUploader"] {
-    background-color: var(--tr-bg-card);
-    border: 1px dashed var(--tr-border-light);
-    border-radius: 12px;
-    padding: 12px;
-}
-
-hr {
-    border-color: var(--tr-border);
-}
-
-a {
-    color: var(--tr-orange);
-}
-
-a:hover {
-    color: var(--tr-orange-dark);
-}
+section[data-testid="stSidebar"] div { color: var(--tr-text-secondary); }
+section[data-testid="stSidebar"] hr { border-color: var(--tr-border); }
+.card { padding: 24px; border-radius: 14px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: all 0.2s ease-in-out; }
+.card:hover { background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange); box-shadow: 0 6px 20px rgba(255,128,0,0.18); }
+.card h3 { margin-top: 0; color: var(--tr-text-main); }
+.card p { color: var(--tr-text-secondary); }
+.botao-link { display: inline-block; background-color: var(--tr-orange); color: #FFFFFF !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; margin-top: 10px; }
+.botao-link:hover { background-color: var(--tr-orange-dark); color: #FFFFFF !important; }
+.stButton > button, .stDownloadButton > button { background-color: var(--tr-orange); color: #FFFFFF; border: 1px solid var(--tr-orange); border-radius: 8px; font-weight: 700; }
+.stButton > button:hover, .stDownloadButton > button:hover { background-color: var(--tr-orange-dark); color: #FFFFFF; border-color: var(--tr-orange-dark); }
+.stTextInput input, .stTextArea textarea { background-color: var(--tr-bg-input); color: var(--tr-text-main); border: 1px solid var(--tr-border-light); border-radius: 8px; }
+.stTextInput input::placeholder, .stTextArea textarea::placeholder { color: var(--tr-text-muted); }
+.stTextInput input:focus, .stTextArea textarea:focus { border-color: var(--tr-orange) !important; box-shadow: 0 0 0 1px var(--tr-orange) !important; }
+.stSelectbox div[data-baseweb="select"] { background-color: var(--tr-bg-input); color: var(--tr-text-main); border-radius: 8px; }
+.stRadio label, .stCheckbox label { color: var(--tr-text-secondary); }
+.status-ativo { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-success-bg); color: var(--tr-success-text); font-weight: 700; font-size: 13px; }
+.status-manutencao { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-warning-bg); color: var(--tr-warning-text); font-weight: 700; font-size: 13px; }
+.status-desenvolvimento { display: inline-block; padding: 5px 11px; border-radius: 999px; background-color: var(--tr-info-bg); color: var(--tr-info-text); font-weight: 700; font-size: 13px; }
+.setor-card { padding: 22px; border-radius: 14px; background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.35); min-height: 140px; transition: all 0.2s ease-in-out; }
+.setor-card:hover { background-color: var(--tr-bg-card-hover); border-color: var(--tr-orange); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,128,0,0.18); }
+.setor-card h1 { border-left: none; padding-left: 0; color: var(--tr-orange); }
+.setor-card h4 { color: var(--tr-text-main); margin-bottom: 4px; }
+.setor-card p { color: var(--tr-text-muted); }
+.aviso-admin { padding: 14px; border-radius: 10px; background-color: var(--tr-warning-bg); color: var(--tr-warning-text); border: 1px solid var(--tr-orange); }
+.aviso-admin strong { color: var(--tr-warning-text); }
+[data-testid="stMetric"] { background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); border-radius: 14px; padding: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+[data-testid="stMetricLabel"] { color: var(--tr-text-muted); }
+[data-testid="stMetricValue"] { color: var(--tr-orange); font-weight: 700; }
+.stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid var(--tr-border); }
+.stTabs [data-baseweb="tab"] { background-color: var(--tr-bg-card); border-radius: 8px 8px 0 0; color: var(--tr-text-secondary); border: 1px solid var(--tr-border); padding: 10px 16px; }
+.stTabs [aria-selected="true"] { background-color: var(--tr-orange-soft); color: var(--tr-orange); border-bottom: 3px solid var(--tr-orange); font-weight: 700; }
+[data-testid="stDataFrame"] { border: 1px solid var(--tr-border); border-radius: 10px; background-color: var(--tr-bg-card); }
+div[data-testid="stAlert"] { border-radius: 10px; border: 1px solid var(--tr-border); }
+div[data-testid="stExpander"] { background-color: var(--tr-bg-card); border: 1px solid var(--tr-border); border-radius: 10px; }
+[data-testid="stFileUploader"] { background-color: var(--tr-bg-card); border: 1px dashed var(--tr-border-light); border-radius: 12px; padding: 12px; }
+hr { border-color: var(--tr-border); }
+a { color: var(--tr-orange); }
+a:hover { color: var(--tr-orange-dark); }
 </style>
 """, unsafe_allow_html=True)
+
+# =========================================================
+# GOOGLE SHEETS — CONEXÃO
+# =========================================================
+
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+@st.cache_resource
+def conectar_gsheets():
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=SCOPES
+    )
+    return gspread.authorize(creds)
+
+
+def abrir_planilha():
+    gc = conectar_gsheets()
+    return gc.open_by_key(st.secrets["SPREADSHEET_ID"])
+
+
+# =========================================================
+# GOOGLE SHEETS — LEITURA E ESCRITA DE DATAFRAMES
+# =========================================================
+
+def carregar_aba(nome_aba: str) -> pd.DataFrame:
+    try:
+        sh = abrir_planilha()
+        ws = sh.worksheet(nome_aba)
+        df = get_as_dataframe(ws, evaluate_formulas=True, dtype=str)
+        df = df.dropna(how="all")
+        df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
+        return df.reset_index(drop=True)
+    except Exception as e:
+        st.error(f"Erro ao carregar aba '{nome_aba}': {e}")
+        return pd.DataFrame()
+
+
+def salvar_aba(df: pd.DataFrame, nome_aba: str):
+    try:
+        sh = abrir_planilha()
+        ws = sh.worksheet(nome_aba)
+        ws.clear()
+        set_with_dataframe(ws, df, include_index=False)
+    except Exception as e:
+        st.error(f"Erro ao salvar aba '{nome_aba}': {e}")
+
+
+# =========================================================
+# GOOGLE SHEETS — IMAGENS E ARQUIVOS BGR (base64 na planilha)
+# =========================================================
+
+def salvar_arquivo_sheets(
+    nome_aba_arquivos: str,
+    nome_arquivo: str,
+    bytes_arquivo: bytes,
+    tipo: str
+):
+    """
+    Salva arquivo em base64 em uma aba dedicada da planilha.
+    tipo: 'imagem' ou 'bgr'
+    """
+    try:
+        sh = abrir_planilha()
+        try:
+            ws = sh.worksheet(nome_aba_arquivos)
+        except gspread.exceptions.WorksheetNotFound:
+            ws = sh.add_worksheet(
+                title=nome_aba_arquivos,
+                rows=1000,
+                cols=4
+            )
+            ws.append_row(["nome_arquivo", "tipo", "conteudo_base64", "data_upload"])
+
+        b64 = base64.b64encode(bytes_arquivo).decode("utf-8")
+        ws.append_row([
+            nome_arquivo,
+            tipo,
+            b64,
+            datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        ])
+    except Exception as e:
+        st.error(f"Erro ao salvar arquivo '{nome_arquivo}': {e}")
+
+
+@st.cache_data(ttl=300)
+def carregar_arquivo_sheets(nome_aba_arquivos: str, nome_arquivo: str) -> bytes | None:
+    """
+    Recupera arquivo em base64 da planilha e retorna os bytes.
+    """
+    try:
+        sh = abrir_planilha()
+        ws = sh.worksheet(nome_aba_arquivos)
+        registros = ws.get_all_records()
+
+        for linha in registros:
+            if linha.get("nome_arquivo") == nome_arquivo:
+                b64 = linha.get("conteudo_base64", "")
+                if b64:
+                    return base64.b64decode(b64)
+        return None
+    except Exception:
+        return None
+
 
 # =========================================================
 # FUNÇÕES AUXILIARES
 # =========================================================
 
-def inicializar_csvs():
-    if not os.path.exists(ARQUIVO_CONVERSORES):
-        df = pd.DataFrame([
-            {
-                "nome": "Gerador RPA TXT",
-                "departamento": "Folha de Pagamento",
-                "descricao": "Gera arquivos TXT para processamento por RPA.",
-                "url": "https://gerador-rpa-txt.streamlit.app/",
-                "status": "Ativo",
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            },
-            {
-                "nome": "Converte Bens Domínio",
-                "departamento": "Patrimônio",
-                "descricao": "Conversor de bens patrimoniais para leiaute compatível com Domínio.",
-                "url": "https://convertebensdominio.streamlit.app/",
-                "status": "Ativo",
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            },
-            {
-                "nome": "Eventos Com Plano / Sem Plano",
-                "departamento": "Fiscal",
-                "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
-                "url": "https://eventos-complano-semplano.streamlit.app/",
-                "status": "Ativo",
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            },
-            {
-                "nome": "Clientes e Fornecedores - Conta Patrimonial",
-                "departamento": "Contabilidade",
-                "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
-                "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
-                "status": "Ativo",
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            },
-            {
-                "nome": "Conversor Leiaute com Separador Domínio",
-                "departamento": "Fiscal",
-                "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
-                "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
-                "status": "Ativo",
-                "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            }
-        ])
-        df.to_csv(ARQUIVO_CONVERSORES, index=False)
+def inicializar_planilha():
+    """
+    Garante que todas as abas existam na planilha com os cabeçalhos corretos.
+    """
+    try:
+        sh = abrir_planilha()
+        abas_existentes = [ws.title for ws in sh.worksheets()]
 
-    if not os.path.exists(ARQUIVO_MODELOS_BGR):
-        df = pd.DataFrame(columns=[
-            "nome",
-            "departamento",
-            "descricao",
-            "imagem",
-            "arquivo_bgr",
-            "status",
-            "data_upload"
-        ])
-        df.to_csv(ARQUIVO_MODELOS_BGR, index=False)
+        estrutura = {
+            "conversores": [
+                "nome", "departamento", "descricao",
+                "url", "status", "data_cadastro"
+            ],
+            "modelos_bgr": [
+                "nome", "departamento", "descricao",
+                "imagem", "arquivo_bgr", "status", "data_upload"
+            ],
+            "escolhas_bgr": [
+                "data_hora", "cliente", "departamento",
+                "modelo", "observacao"
+            ],
+            "solicitacoes_bgr": [
+                "data_hora", "nome_usuario", "email_usuario",
+                "cnpj", "codigo_cliente_dominio", "departamento",
+                "modelo", "arquivo_bgr", "observacao", "status"
+            ],
+        }
 
-    if not os.path.exists(ARQUIVO_ESCOLHAS_BGR):
-        df = pd.DataFrame(columns=[
-            "data_hora",
-            "cliente",
-            "departamento",
-            "modelo",
-            "observacao"
-        ])
-        df.to_csv(ARQUIVO_ESCOLHAS_BGR, index=False)
+        for nome_aba, colunas in estrutura.items():
+            if nome_aba not in abas_existentes:
+                ws = sh.add_worksheet(title=nome_aba, rows=1000, cols=len(colunas))
+                ws.append_row(colunas)
 
-    if not os.path.exists(ARQUIVO_SOLICITACOES_BGR):
-        df = pd.DataFrame(columns=[
-            "data_hora",
-            "nome_usuario",
-            "email_usuario",
-            "cnpj",
-            "codigo_cliente_dominio",
-            "departamento",
-            "modelo",
-            "arquivo_bgr",
-            "observacao",
-            "status"
-        ])
-        df.to_csv(ARQUIVO_SOLICITACOES_BGR, index=False)
+        # Preenche conversores padrão se a aba estiver vazia
+        ws_conv = sh.worksheet("conversores")
+        dados = ws_conv.get_all_records()
 
+        if not dados:
+            df_inicial = pd.DataFrame([
+                {
+                    "nome": "Gerador RPA TXT",
+                    "departamento": "Folha de Pagamento",
+                    "descricao": "Gera arquivos TXT para processamento por RPA.",
+                    "url": "https://gerador-rpa-txt.streamlit.app/",
+                    "status": "Ativo",
+                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                },
+                {
+                    "nome": "Converte Bens Domínio",
+                    "departamento": "Patrimônio",
+                    "descricao": "Conversor de bens patrimoniais para leiaute compatível com Domínio.",
+                    "url": "https://convertebensdominio.streamlit.app/",
+                    "status": "Ativo",
+                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                },
+                {
+                    "nome": "Eventos Com Plano / Sem Plano",
+                    "departamento": "Fiscal",
+                    "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
+                    "url": "https://eventos-complano-semplano.streamlit.app/",
+                    "status": "Ativo",
+                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                },
+                {
+                    "nome": "Clientes e Fornecedores - Conta Patrimonial",
+                    "departamento": "Contabilidade",
+                    "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
+                    "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
+                    "status": "Ativo",
+                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                },
+                {
+                    "nome": "Conversor Leiaute com Separador Domínio",
+                    "departamento": "Fiscal",
+                    "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
+                    "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
+                    "status": "Ativo",
+                    "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                },
+            ])
+            set_with_dataframe(ws_conv, df_inicial, include_index=False)
 
-def garantir_colunas_modelos_bgr():
-    if not os.path.exists(ARQUIVO_MODELOS_BGR):
-        return
-
-    df = pd.read_csv(ARQUIVO_MODELOS_BGR)
-    alterado = False
-
-    if "imagem" not in df.columns:
-        if "arquivo" in df.columns:
-            df["imagem"] = df["arquivo"]
-        else:
-            df["imagem"] = ""
-        alterado = True
-
-    if "arquivo_bgr" not in df.columns:
-        df["arquivo_bgr"] = ""
-        alterado = True
-
-    colunas_finais = [
-        "nome",
-        "departamento",
-        "descricao",
-        "imagem",
-        "arquivo_bgr",
-        "status",
-        "data_upload"
-    ]
-
-    for coluna in colunas_finais:
-        if coluna not in df.columns:
-            df[coluna] = ""
-            alterado = True
-
-    df = df[colunas_finais]
-
-    if alterado:
-        df.to_csv(ARQUIVO_MODELOS_BGR, index=False)
-
-
-def carregar_csv(caminho):
-    if os.path.exists(caminho):
-        return pd.read_csv(caminho)
-    return pd.DataFrame()
-
-
-def salvar_csv(df, caminho):
-    df.to_csv(caminho, index=False)
+    except Exception as e:
+        st.error(f"Erro ao inicializar planilha: {e}")
 
 
 def status_html(status):
@@ -518,21 +332,14 @@ def status_html(status):
 
 def gerar_excel_download(dfs: dict):
     output = BytesIO()
-
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         for nome_aba, df in dfs.items():
             df.to_excel(writer, index=False, sheet_name=nome_aba[:31])
-
     return output.getvalue()
 
 
 def mostrar_logo():
-    caminho_logo = os.path.join(PASTA_ASSETS, "logo.png")
-
-    if os.path.exists(caminho_logo):
-        st.sidebar.image(caminho_logo, use_container_width=True)
-    else:
-        st.sidebar.markdown("### 🧩 Portal de Ferramentas")
+    st.sidebar.markdown("### 🧩 Portal de Ferramentas")
 
 
 def nome_arquivo_seguro(nome_arquivo):
@@ -561,8 +368,7 @@ def email_valido(email):
 # INICIALIZAÇÃO
 # =========================================================
 
-inicializar_csvs()
-garantir_colunas_modelos_bgr()
+inicializar_planilha()
 mostrar_logo()
 
 # =========================================================
@@ -574,11 +380,7 @@ st.sidebar.subheader("Menu público")
 
 pagina_publica = st.sidebar.radio(
     "Selecione uma opção:",
-    [
-        "Início",
-        "Conversores",
-        "Relatórios BGR"
-    ]
+    ["Início", "Conversores", "Relatórios BGR"]
 )
 
 st.sidebar.write("---")
@@ -586,10 +388,7 @@ st.sidebar.subheader("Área administrativa")
 
 abrir_admin = st.sidebar.checkbox("Abrir Painel Administrativo")
 
-if abrir_admin:
-    pagina = "Painel Administrativo"
-else:
-    pagina = pagina_publica
+pagina = "Painel Administrativo" if abrir_admin else pagina_publica
 
 # =========================================================
 # PÁGINA INÍCIO
@@ -599,18 +398,16 @@ if pagina == "Início":
     st.title("🧩 Portal de Ferramentas")
     st.write("Central de conversores, relatórios BGR e ferramentas internas por departamento.")
 
-    df_conversores = carregar_csv(ARQUIVO_CONVERSORES)
-    df_modelos = carregar_csv(ARQUIVO_MODELOS_BGR)
-    df_solicitacoes = carregar_csv(ARQUIVO_SOLICITACOES_BGR)
+    df_conversores   = carregar_aba("conversores")
+    df_modelos       = carregar_aba("modelos_bgr")
+    df_solicitacoes  = carregar_aba("solicitacoes_bgr")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric("Conversores cadastrados", len(df_conversores))
-
     with col2:
         st.metric("Modelos BGR cadastrados", len(df_modelos))
-
     with col3:
         st.metric("Solicitações BGR", len(df_solicitacoes))
 
@@ -629,8 +426,10 @@ if pagina == "Início":
 
     for i, dep in enumerate(DEPARTAMENTOS):
         with cols[i]:
-            qtd = len(df_conversores[df_conversores["departamento"] == dep]) if not df_conversores.empty else 0
-
+            qtd = (
+                len(df_conversores[df_conversores["departamento"] == dep])
+                if not df_conversores.empty else 0
+            )
             st.markdown(f"""
             <div class="setor-card">
                 <h1>{icones[dep]}</h1>
@@ -646,7 +445,7 @@ if pagina == "Início":
 elif pagina == "Conversores":
     st.title("🛠️ Conversores")
 
-    df = carregar_csv(ARQUIVO_CONVERSORES)
+    df = carregar_aba("conversores")
 
     col1, col2 = st.columns(2)
 
@@ -655,7 +454,6 @@ elif pagina == "Conversores":
             "Filtrar por departamento:",
             ["Todos"] + DEPARTAMENTOS
         )
-
     with col2:
         filtro_status = st.selectbox(
             "Filtrar por status:",
@@ -667,7 +465,6 @@ elif pagina == "Conversores":
     if not df_filtrado.empty:
         if filtro_departamento != "Todos":
             df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
-
         if filtro_status != "Todos":
             df_filtrado = df_filtrado[df_filtrado["status"] == filtro_status]
 
@@ -683,7 +480,7 @@ elif pagina == "Conversores":
                 <p><strong>Status:</strong> {status_html(row["status"])}</p>
             """, unsafe_allow_html=True)
 
-            if row["status"] == "Ativo" and valor_texto(row["url"]):
+            if row["status"] == "Ativo" and valor_texto(row.get("url", "")):
                 st.markdown(f"""
                     <a class="botao-link" href="{row["url"]}" target="_blank">
                         Acessar ferramenta
@@ -703,24 +500,21 @@ elif pagina == "Conversores":
 elif pagina == "Relatórios BGR":
     st.title("📄 Relatórios BGR")
 
-    df_modelos = carregar_csv(ARQUIVO_MODELOS_BGR)
+    df_modelos = carregar_aba("modelos_bgr")
 
     st.write(
-        "Consulte os modelos BGR disponíveis. Para baixar o arquivo `.bgr`, informe seus dados para registro da solicitação."
+        "Consulte os modelos BGR disponíveis. Para baixar o arquivo `.bgr`, "
+        "informe seus dados para registro da solicitação."
     )
 
     col_filtro1, col_filtro2 = st.columns([1, 2])
 
     with col_filtro1:
-        departamento = st.selectbox(
-            "Selecione o departamento:",
-            DEPARTAMENTOS
-        )
-
+        departamento = st.selectbox("Selecione o departamento:", DEPARTAMENTOS)
     with col_filtro2:
         pesquisa = st.text_input(
             "Pesquisar no nome ou descrição do BGR:",
-            placeholder="Exemplo: folha, fiscal, impostos, balancete, honorários..."
+            placeholder="Exemplo: folha, fiscal, impostos..."
         )
 
     if not df_modelos.empty:
@@ -745,10 +539,10 @@ elif pagina == "Relatórios BGR":
         st.success(f"{len(df_dep)} modelo(s) BGR encontrado(s).")
 
         for index, modelo_info in df_dep.iterrows():
-            nome_modelo = valor_texto(modelo_info.get("nome", ""))
+            nome_modelo    = valor_texto(modelo_info.get("nome", ""))
             descricao_modelo = valor_texto(modelo_info.get("descricao", ""))
-            nome_imagem = valor_texto(modelo_info.get("imagem", ""))
-            nome_bgr = valor_texto(modelo_info.get("arquivo_bgr", ""))
+            nome_imagem    = valor_texto(modelo_info.get("imagem", ""))
+            nome_bgr       = valor_texto(modelo_info.get("arquivo_bgr", ""))
 
             st.markdown("<div class='card'>", unsafe_allow_html=True)
 
@@ -758,21 +552,12 @@ elif pagina == "Relatórios BGR":
                 st.markdown(f"### {nome_modelo}")
 
                 if nome_imagem:
-                    caminho_imagem = os.path.join(PASTA_UPLOADS_IMAGENS, nome_imagem)
+                    img_bytes = carregar_arquivo_sheets("arquivos_uploads", nome_imagem)
 
-                    if os.path.exists(caminho_imagem):
-                        st.image(
-                            caminho_imagem,
-                            caption="Prévia",
-                            width=220
-                        )
-
+                    if img_bytes:
+                        st.image(img_bytes, caption="Prévia", width=220)
                         with st.expander("🔍 Ver imagem maior"):
-                            st.image(
-                                caminho_imagem,
-                                caption=nome_modelo,
-                                use_container_width=True
-                            )
+                            st.image(img_bytes, caption=nome_modelo, use_container_width=True)
                     else:
                         st.warning("Imagem não encontrada.")
                 else:
@@ -781,11 +566,9 @@ elif pagina == "Relatórios BGR":
             with col_desc:
                 st.markdown("#### Descrição")
                 st.write(descricao_modelo)
-
                 st.markdown("#### Informações")
                 st.write(f"**Departamento:** {departamento}")
                 st.write(f"**Status:** {modelo_info.get('status', '')}")
-
                 data_upload = valor_texto(modelo_info.get("data_upload", ""))
                 if data_upload:
                     st.write(f"**Data de upload:** {data_upload}")
@@ -794,18 +577,14 @@ elif pagina == "Relatórios BGR":
                 st.markdown("#### Acesso")
 
                 if nome_bgr:
-                    caminho_bgr = os.path.join(PASTA_UPLOADS_BGR, nome_bgr)
+                    bgr_bytes = carregar_arquivo_sheets("arquivos_uploads", nome_bgr)
 
-                    if os.path.exists(caminho_bgr):
-                        if st.button(
-                            "Solicitar acesso",
-                            key=f"solicitar_modelo_{index}"
-                        ):
-                            st.session_state["modelo_bgr_solicitado"] = nome_modelo
-                            st.session_state["arquivo_bgr_solicitado"] = nome_bgr
+                    if bgr_bytes:
+                        if st.button("Solicitar acesso", key=f"solicitar_modelo_{index}"):
+                            st.session_state["modelo_bgr_solicitado"]     = nome_modelo
+                            st.session_state["arquivo_bgr_solicitado"]    = nome_bgr
                             st.session_state["departamento_bgr_solicitado"] = departamento
-                            st.session_state["download_bgr_liberado"] = False
-
+                            st.session_state["download_bgr_liberado"]     = False
                             st.success("Modelo selecionado. Preencha os dados abaixo.")
                     else:
                         st.warning("Arquivo .BGR não encontrado.")
@@ -822,8 +601,8 @@ elif pagina == "Relatórios BGR":
         st.write("---")
         st.subheader("Solicitar acesso ao modelo BGR")
 
-        modelo_solicitado = st.session_state.get("modelo_bgr_solicitado", "")
-        arquivo_solicitado = st.session_state.get("arquivo_bgr_solicitado", "")
+        modelo_solicitado      = st.session_state.get("modelo_bgr_solicitado", "")
+        arquivo_solicitado     = st.session_state.get("arquivo_bgr_solicitado", "")
         departamento_solicitado = st.session_state.get("departamento_bgr_solicitado", "")
 
         if modelo_solicitado:
@@ -832,11 +611,11 @@ elif pagina == "Relatórios BGR":
             st.warning("Selecione um modelo acima antes de solicitar o acesso.")
 
         with st.form("form_solicitacao_bgr"):
-            nome_usuario = st.text_input("Nome")
-            email_usuario = st.text_input("E-mail")
-            cnpj = st.text_input("CNPJ")
+            nome_usuario         = st.text_input("Nome")
+            email_usuario        = st.text_input("E-mail")
+            cnpj                 = st.text_input("CNPJ")
             codigo_cliente_dominio = st.text_input("Código cliente Domínio")
-            observacao = st.text_area("Observações")
+            observacao           = st.text_area("Observações")
 
             confirmar = st.form_submit_button("Registrar e liberar download")
 
@@ -854,19 +633,19 @@ elif pagina == "Relatórios BGR":
                 elif not codigo_cliente_dominio:
                     st.warning("Informe o código cliente Domínio.")
                 else:
-                    df_solicitacoes = carregar_csv(ARQUIVO_SOLICITACOES_BGR)
+                    df_solicitacoes = carregar_aba("solicitacoes_bgr")
 
                     novo = pd.DataFrame([{
-                        "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                        "nome_usuario": nome_usuario,
-                        "email_usuario": email_usuario,
-                        "cnpj": cnpj,
-                        "codigo_cliente_dominio": codigo_cliente_dominio,
-                        "departamento": departamento_solicitado,
-                        "modelo": modelo_solicitado,
-                        "arquivo_bgr": arquivo_solicitado,
-                        "observacao": observacao,
-                        "status": "Liberado"
+                        "data_hora":               datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        "nome_usuario":            nome_usuario,
+                        "email_usuario":           email_usuario,
+                        "cnpj":                    cnpj,
+                        "codigo_cliente_dominio":  codigo_cliente_dominio,
+                        "departamento":            departamento_solicitado,
+                        "modelo":                  modelo_solicitado,
+                        "arquivo_bgr":             arquivo_solicitado,
+                        "observacao":              observacao,
+                        "status":                  "Liberado"
                     }])
 
                     df_solicitacoes = pd.concat(
@@ -874,27 +653,22 @@ elif pagina == "Relatórios BGR":
                         ignore_index=True
                     )
 
-                    salvar_csv(df_solicitacoes, ARQUIVO_SOLICITACOES_BGR)
+                    salvar_aba(df_solicitacoes, "solicitacoes_bgr")
 
                     st.session_state["download_bgr_liberado"] = True
-
                     st.success("Solicitação registrada com sucesso. Download liberado.")
 
         if st.session_state.get("download_bgr_liberado", False):
-            caminho_bgr = os.path.join(
-                PASTA_UPLOADS_BGR,
-                arquivo_solicitado
-            )
+            bgr_bytes = carregar_arquivo_sheets("arquivos_uploads", arquivo_solicitado)
 
-            if arquivo_solicitado and os.path.exists(caminho_bgr):
-                with open(caminho_bgr, "rb") as file:
-                    st.download_button(
-                        label="📥 Baixar .BGR",
-                        data=file,
-                        file_name=arquivo_solicitado,
-                        mime="application/octet-stream",
-                        key="download_bgr_liberado_btn"
-                    )
+            if bgr_bytes:
+                st.download_button(
+                    label="📥 Baixar .BGR",
+                    data=bgr_bytes,
+                    file_name=arquivo_solicitado,
+                    mime="application/octet-stream",
+                    key="download_bgr_liberado_btn"
+                )
             else:
                 st.warning("Arquivo .BGR não encontrado.")
 
@@ -907,8 +681,8 @@ elif pagina == "Painel Administrativo":
 
     st.markdown("""
     <div class="aviso-admin">
-        <strong>Atenção:</strong> esta versão está sem login. O painel administrativo está separado do menu público,
-        mas ainda não possui senha.
+        <strong>Atenção:</strong> esta versão está sem login. O painel administrativo está separado
+        do menu público, mas ainda não possui senha.
     </div>
     """, unsafe_allow_html=True)
 
@@ -931,29 +705,29 @@ elif pagina == "Painel Administrativo":
         st.subheader("➕ Cadastrar novo conversor")
 
         with st.form("form_conversor"):
-            nome = st.text_input("Nome do conversor")
+            nome        = st.text_input("Nome do conversor")
             departamento = st.selectbox("Departamento", DEPARTAMENTOS)
-            descricao = st.text_area("Descrição")
-            url = st.text_input("URL do conversor")
-            status = st.selectbox("Status", STATUS_FERRAMENTAS)
+            descricao   = st.text_area("Descrição")
+            url         = st.text_input("URL do conversor")
+            status      = st.selectbox("Status", STATUS_FERRAMENTAS)
 
             enviar = st.form_submit_button("Cadastrar conversor")
 
             if enviar:
                 if nome and departamento and descricao:
-                    df = carregar_csv(ARQUIVO_CONVERSORES)
+                    df = carregar_aba("conversores")
 
                     novo = pd.DataFrame([{
-                        "nome": nome,
-                        "departamento": departamento,
-                        "descricao": descricao,
-                        "url": url,
-                        "status": status,
-                        "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        "nome":           nome,
+                        "departamento":   departamento,
+                        "descricao":      descricao,
+                        "url":            url,
+                        "status":         status,
+                        "data_cadastro":  datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     }])
 
                     df = pd.concat([df, novo], ignore_index=True)
-                    salvar_csv(df, ARQUIVO_CONVERSORES)
+                    salvar_aba(df, "conversores")
 
                     st.success("Conversor cadastrado com sucesso!")
                 else:
@@ -965,22 +739,21 @@ elif pagina == "Painel Administrativo":
 
     with aba2:
         st.subheader("📤 Upload de modelo BGR")
-
         st.write(
-            "Cadastre uma imagem de prévia do relatório e, se desejar, o arquivo `.bgr` correspondente."
+            "Cadastre uma imagem de prévia do relatório e, se desejar, "
+            "o arquivo `.bgr` correspondente."
         )
 
         with st.form("form_bgr"):
-            nome_modelo = st.text_input("Nome do modelo BGR")
+            nome_modelo        = st.text_input("Nome do modelo BGR")
             departamento_modelo = st.selectbox("Departamento do modelo", DEPARTAMENTOS)
-            descricao_modelo = st.text_area("Descrição do modelo")
-            status_modelo = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
+            descricao_modelo   = st.text_area("Descrição do modelo")
+            status_modelo      = st.selectbox("Status do modelo", STATUS_FERRAMENTAS)
 
-            imagem = st.file_uploader(
+            imagem      = st.file_uploader(
                 "Selecione a imagem de prévia do relatório",
                 type=["png", "jpg", "jpeg"]
             )
-
             arquivo_bgr = st.file_uploader(
                 "Selecione o arquivo .BGR",
                 type=["bgr"]
@@ -992,43 +765,40 @@ elif pagina == "Painel Administrativo":
                 if nome_modelo and departamento_modelo and imagem:
                     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-                    nome_imagem_seguro = nome_arquivo_seguro(imagem.name)
-                    nome_imagem_salva = f"{timestamp}_{nome_imagem_seguro}"
-                    caminho_imagem_salvar = os.path.join(
-                        PASTA_UPLOADS_IMAGENS,
-                        nome_imagem_salva
+                    # Salva imagem no Google Sheets (base64)
+                    nome_imagem_salva = f"{timestamp}_{nome_arquivo_seguro(imagem.name)}"
+                    salvar_arquivo_sheets(
+                        "arquivos_uploads",
+                        nome_imagem_salva,
+                        imagem.getbuffer().tobytes(),
+                        "imagem"
                     )
 
-                    with open(caminho_imagem_salvar, "wb") as f:
-                        f.write(imagem.getbuffer())
-
+                    # Salva arquivo BGR no Google Sheets (base64)
                     nome_bgr_salvo = ""
-
                     if arquivo_bgr is not None:
-                        nome_bgr_seguro = nome_arquivo_seguro(arquivo_bgr.name)
-                        nome_bgr_salvo = f"{timestamp}_{nome_bgr_seguro}"
-                        caminho_bgr_salvar = os.path.join(
-                            PASTA_UPLOADS_BGR,
-                            nome_bgr_salvo
+                        nome_bgr_salvo = f"{timestamp}_{nome_arquivo_seguro(arquivo_bgr.name)}"
+                        salvar_arquivo_sheets(
+                            "arquivos_uploads",
+                            nome_bgr_salvo,
+                            arquivo_bgr.getbuffer().tobytes(),
+                            "bgr"
                         )
 
-                        with open(caminho_bgr_salvar, "wb") as f:
-                            f.write(arquivo_bgr.getbuffer())
-
-                    df = carregar_csv(ARQUIVO_MODELOS_BGR)
+                    df = carregar_aba("modelos_bgr")
 
                     novo = pd.DataFrame([{
-                        "nome": nome_modelo,
+                        "nome":         nome_modelo,
                         "departamento": departamento_modelo,
-                        "descricao": descricao_modelo,
-                        "imagem": nome_imagem_salva,
-                        "arquivo_bgr": nome_bgr_salvo,
-                        "status": status_modelo,
-                        "data_upload": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        "descricao":    descricao_modelo,
+                        "imagem":       nome_imagem_salva,
+                        "arquivo_bgr":  nome_bgr_salvo,
+                        "status":       status_modelo,
+                        "data_upload":  datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     }])
 
                     df = pd.concat([df, novo], ignore_index=True)
-                    salvar_csv(df, ARQUIVO_MODELOS_BGR)
+                    salvar_aba(df, "modelos_bgr")
 
                     st.success("Modelo BGR enviado com sucesso!")
                 else:
@@ -1041,7 +811,7 @@ elif pagina == "Painel Administrativo":
     with aba3:
         st.subheader("📑 Histórico de Escolhas BGR")
 
-        df = carregar_csv(ARQUIVO_ESCOLHAS_BGR)
+        df = carregar_aba("escolhas_bgr")
 
         if df.empty:
             st.info("Nenhuma escolha registrada ainda.")
@@ -1054,35 +824,22 @@ elif pagina == "Painel Administrativo":
                     ["Todos"] + DEPARTAMENTOS,
                     key="hist_dep_admin"
                 )
-
             with col2:
-                busca_cliente = st.text_input(
-                    "Buscar cliente:",
-                    key="busca_cliente_admin"
-                )
+                busca_cliente = st.text_input("Buscar cliente:", key="busca_cliente_admin")
 
             df_filtrado = df.copy()
 
             if filtro_departamento != "Todos":
-                df_filtrado = df_filtrado[
-                    df_filtrado["departamento"] == filtro_departamento
-                ]
+                df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
 
             if busca_cliente:
                 df_filtrado = df_filtrado[
-                    df_filtrado["cliente"].str.contains(
-                        busca_cliente,
-                        case=False,
-                        na=False
-                    )
+                    df_filtrado["cliente"].str.contains(busca_cliente, case=False, na=False)
                 ]
 
             st.dataframe(df_filtrado, use_container_width=True)
 
-            excel = gerar_excel_download({
-                "Historico_BGR": df_filtrado
-            })
-
+            excel = gerar_excel_download({"Historico_BGR": df_filtrado})
             st.download_button(
                 label="📥 Exportar histórico para Excel",
                 data=excel,
@@ -1097,7 +854,7 @@ elif pagina == "Painel Administrativo":
     with aba4:
         st.subheader("📥 Solicitações de acesso aos BGR")
 
-        df = carregar_csv(ARQUIVO_SOLICITACOES_BGR)
+        df = carregar_aba("solicitacoes_bgr")
 
         if df.empty:
             st.info("Nenhuma solicitação registrada ainda.")
@@ -1110,50 +867,31 @@ elif pagina == "Painel Administrativo":
                     ["Todos"] + DEPARTAMENTOS,
                     key="sol_dep_admin"
                 )
-
             with col2:
-                busca_cnpj = st.text_input(
-                    "Buscar CNPJ:",
-                    key="sol_cnpj_admin"
-                )
-
+                busca_cnpj = st.text_input("Buscar CNPJ:", key="sol_cnpj_admin")
             with col3:
-                busca_email = st.text_input(
-                    "Buscar e-mail:",
-                    key="sol_email_admin"
-                )
+                busca_email = st.text_input("Buscar e-mail:", key="sol_email_admin")
 
             df_filtrado = df.copy()
 
             if filtro_departamento != "Todos":
-                df_filtrado = df_filtrado[
-                    df_filtrado["departamento"] == filtro_departamento
-                ]
+                df_filtrado = df_filtrado[df_filtrado["departamento"] == filtro_departamento]
 
             if busca_cnpj:
                 df_filtrado = df_filtrado[
-                    df_filtrado["cnpj"].astype(str).str.contains(
-                        busca_cnpj,
-                        case=False,
-                        na=False
-                    )
+                    df_filtrado["cnpj"].astype(str).str.contains(busca_cnpj, case=False, na=False)
                 ]
 
             if busca_email:
                 df_filtrado = df_filtrado[
                     df_filtrado["email_usuario"].astype(str).str.contains(
-                        busca_email,
-                        case=False,
-                        na=False
+                        busca_email, case=False, na=False
                     )
                 ]
 
             st.dataframe(df_filtrado, use_container_width=True)
 
-            excel = gerar_excel_download({
-                "Solicitacoes_BGR": df_filtrado
-            })
-
+            excel = gerar_excel_download({"Solicitacoes_BGR": df_filtrado})
             st.download_button(
                 label="📥 Exportar solicitações para Excel",
                 data=excel,
@@ -1170,24 +908,18 @@ elif pagina == "Painel Administrativo":
 
         tipo_dado = st.selectbox(
             "Selecione a base:",
-            [
-                "Conversores",
-                "Modelos BGR",
-                "Histórico de Escolhas",
-                "Solicitações BGR"
-            ]
+            ["Conversores", "Modelos BGR", "Histórico de Escolhas", "Solicitações BGR"]
         )
 
-        if tipo_dado == "Conversores":
-            arquivo_base = ARQUIVO_CONVERSORES
-        elif tipo_dado == "Modelos BGR":
-            arquivo_base = ARQUIVO_MODELOS_BGR
-        elif tipo_dado == "Histórico de Escolhas":
-            arquivo_base = ARQUIVO_ESCOLHAS_BGR
-        else:
-            arquivo_base = ARQUIVO_SOLICITACOES_BGR
+        mapa_abas = {
+            "Conversores":           "conversores",
+            "Modelos BGR":           "modelos_bgr",
+            "Histórico de Escolhas": "escolhas_bgr",
+            "Solicitações BGR":      "solicitacoes_bgr",
+        }
 
-        df_base = carregar_csv(arquivo_base)
+        nome_aba_selecionada = mapa_abas[tipo_dado]
+        df_base = carregar_aba(nome_aba_selecionada)
 
         st.write("Edite os dados diretamente na tabela abaixo:")
 
@@ -1198,8 +930,8 @@ elif pagina == "Painel Administrativo":
         )
 
         if st.button("Salvar alterações"):
-            salvar_csv(df_editado, arquivo_base)
-            st.success("Alterações salvas com sucesso!")
+            salvar_aba(df_editado, nome_aba_selecionada)
+            st.success("Alterações salvas com sucesso no Google Sheets!")
 
     # -----------------------------------------------------
     # ABA 6 - EXPORTAÇÕES
@@ -1208,15 +940,15 @@ elif pagina == "Painel Administrativo":
     with aba6:
         st.subheader("📦 Exportar bases para Excel")
 
-        df_conversores = carregar_csv(ARQUIVO_CONVERSORES)
-        df_modelos = carregar_csv(ARQUIVO_MODELOS_BGR)
-        df_escolhas = carregar_csv(ARQUIVO_ESCOLHAS_BGR)
-        df_solicitacoes = carregar_csv(ARQUIVO_SOLICITACOES_BGR)
+        df_conversores  = carregar_aba("conversores")
+        df_modelos      = carregar_aba("modelos_bgr")
+        df_escolhas     = carregar_aba("escolhas_bgr")
+        df_solicitacoes = carregar_aba("solicitacoes_bgr")
 
         excel = gerar_excel_download({
-            "Conversores": df_conversores,
-            "Modelos_BGR": df_modelos,
-            "Escolhas_BGR": df_escolhas,
+            "Conversores":    df_conversores,
+            "Modelos_BGR":    df_modelos,
+            "Escolhas_BGR":   df_escolhas,
             "Solicitacoes_BGR": df_solicitacoes
         })
 
