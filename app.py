@@ -1383,6 +1383,233 @@ elif pagina == "Painel Administrativo":
 
         df_bgr = carregar_tabela("modelos_bgr")
 
+         # =====================================================
+        # FORMULÁRIO — CADASTRAR / EDITAR MODELO BGR
+        # =====================================================
+
+        if "modo_bgr" not in st.session_state:
+            st.session_state["modo_bgr"] = "cadastro"
+
+        if "editando_bgr" not in st.session_state:
+            st.session_state["editando_bgr"] = None
+
+        if "expandir_form_bgr" not in st.session_state:
+            st.session_state["expandir_form_bgr"] = False
+
+        col_novo_bgr, _ = st.columns([1.6, 6])
+
+        with col_novo_bgr:
+            if st.button("➕ Novo modelo BGR", key="btn_novo_bgr", use_container_width=True):
+                st.session_state["modo_bgr"] = "cadastro"
+                st.session_state["editando_bgr"] = None
+                st.session_state["expandir_form_bgr"] = True
+                st.rerun()
+
+        modo_bgr = st.session_state.get("modo_bgr", "cadastro")
+        id_edit_bgr = st.session_state.get("editando_bgr")
+        dados_bgr_edicao = {}
+
+        if modo_bgr == "edicao" and id_edit_bgr is not None:
+            if not df_bgr.empty and "id" in df_bgr.columns:
+                registro_bgr = df_bgr[df_bgr["id"] == int(id_edit_bgr)]
+
+                if not registro_bgr.empty:
+                    dados_bgr_edicao = registro_bgr.iloc[0].to_dict()
+                else:
+                    st.warning("Modelo BGR não encontrado para edição.")
+                    st.session_state["modo_bgr"] = "cadastro"
+                    st.session_state["editando_bgr"] = None
+                    modo_bgr = "cadastro"
+                    id_edit_bgr = None
+
+        titulo_form_bgr = "➕ Cadastrar novo modelo BGR"
+
+        if modo_bgr == "edicao":
+            titulo_form_bgr = f"✏️ Editar modelo BGR: {valor_texto(dados_bgr_edicao.get('nome', ''))}"
+
+        with st.expander(
+            titulo_form_bgr,
+            expanded=st.session_state.get("expandir_form_bgr", False)
+        ):
+            sufixo_bgr = f"{modo_bgr}_{id_edit_bgr if id_edit_bgr is not None else 'novo'}"
+
+            nome_atual_bgr = valor_texto(dados_bgr_edicao.get("nome", ""))
+            dep_atual_bgr = valor_texto(dados_bgr_edicao.get("departamento", DEPARTAMENTOS[0]))
+            desc_atual_bgr = valor_texto(dados_bgr_edicao.get("descricao", ""))
+            status_atual_bgr = valor_texto(dados_bgr_edicao.get("status", STATUS_FERRAMENTAS[0]))
+            imagem_atual_bgr = valor_texto(dados_bgr_edicao.get("imagem", ""))
+            arquivo_atual_bgr = valor_texto(dados_bgr_edicao.get("arquivo_bgr", ""))
+
+            idx_dep_bgr = DEPARTAMENTOS.index(dep_atual_bgr) if dep_atual_bgr in DEPARTAMENTOS else 0
+            idx_status_bgr = STATUS_FERRAMENTAS.index(status_atual_bgr) if status_atual_bgr in STATUS_FERRAMENTAS else 0
+
+            with st.form(f"form_bgr_{sufixo_bgr}"):
+                bform1, bform2 = st.columns(2)
+
+                with bform1:
+                    nome_bgr_form = st.text_input(
+                        "Nome do relatório BGR",
+                        value=nome_atual_bgr,
+                        key=f"nome_bgr_form_{sufixo_bgr}"
+                    )
+
+                    departamento_bgr_form = st.selectbox(
+                        "Departamento",
+                        DEPARTAMENTOS,
+                        index=idx_dep_bgr,
+                        key=f"dep_bgr_form_{sufixo_bgr}"
+                    )
+
+                    status_bgr_form = st.selectbox(
+                        "Status",
+                        STATUS_FERRAMENTAS,
+                        index=idx_status_bgr,
+                        key=f"status_bgr_form_{sufixo_bgr}"
+                    )
+
+                    descricao_bgr_form = st.text_area(
+                        "Descrição",
+                        value=desc_atual_bgr,
+                        height=120,
+                        key=f"desc_bgr_form_{sufixo_bgr}"
+                    )
+
+                with bform2:
+                    if imagem_atual_bgr:
+                        st.caption(f"Imagem atual: {imagem_atual_bgr}")
+
+                    imagem_upload_bgr = st.file_uploader(
+                        "Imagem de prévia",
+                        type=["png", "jpg", "jpeg", "webp"],
+                        key=f"imagem_bgr_form_{sufixo_bgr}"
+                    )
+
+                    if arquivo_atual_bgr:
+                        st.caption(f"Arquivo BGR atual: {arquivo_atual_bgr}")
+
+                    arquivo_upload_bgr = st.file_uploader(
+                        "Arquivo .BGR",
+                        type=["bgr"],
+                        key=f"arquivo_bgr_form_{sufixo_bgr}"
+                    )
+
+                bsalvar_bgr, bcancelar_bgr = st.columns([1, 1])
+
+                with bsalvar_bgr:
+                    salvar_bgr = st.form_submit_button(
+                        "💾 Salvar modelo BGR",
+                        use_container_width=True
+                    )
+
+                with bcancelar_bgr:
+                    cancelar_bgr = st.form_submit_button(
+                        "❌ Cancelar",
+                        use_container_width=True
+                    )
+
+            if cancelar_bgr:
+                st.session_state["modo_bgr"] = "cadastro"
+                st.session_state["editando_bgr"] = None
+                st.session_state["expandir_form_bgr"] = False
+                st.rerun()
+
+            if salvar_bgr:
+                if not valor_texto(nome_bgr_form):
+                    st.warning("Informe o nome do relatório BGR.")
+                elif not valor_texto(descricao_bgr_form):
+                    st.warning("Informe a descrição do relatório BGR.")
+                elif modo_bgr == "cadastro" and arquivo_upload_bgr is None:
+                    st.warning("Envie o arquivo .BGR.")
+                else:
+                    imagem_nome_final = imagem_atual_bgr
+                    arquivo_bgr_nome_final = arquivo_atual_bgr
+
+                    agora_nome = datetime.now().strftime("%Y%m%d%H%M%S")
+
+                    if imagem_upload_bgr is not None:
+                        imagem_nome_final = nome_arquivo_seguro(
+                            f"{agora_nome}_{imagem_upload_bgr.name}"
+                        )
+
+                        upload_img_ok = upload_arquivo(
+                            BUCKET_IMAGENS,
+                            imagem_nome_final,
+                            imagem_upload_bgr.getvalue(),
+                            imagem_upload_bgr.type or "application/octet-stream"
+                        )
+
+                        if not upload_img_ok:
+                            st.stop()
+
+                    if arquivo_upload_bgr is not None:
+                        arquivo_bgr_nome_final = nome_arquivo_seguro(
+                            f"{agora_nome}_{arquivo_upload_bgr.name}"
+                        )
+
+                        upload_bgr_ok = upload_arquivo(
+                            BUCKET_BGR,
+                            arquivo_bgr_nome_final,
+                            arquivo_upload_bgr.getvalue(),
+                            arquivo_upload_bgr.type or "application/octet-stream"
+                        )
+
+                        if not upload_bgr_ok:
+                            st.stop()
+
+                    dados_salvar_bgr = {
+                        "nome": valor_texto(nome_bgr_form),
+                        "departamento": departamento_bgr_form,
+                        "descricao": valor_texto(descricao_bgr_form),
+                        "status": status_bgr_form,
+                        "imagem": imagem_nome_final,
+                        "arquivo_bgr": arquivo_bgr_nome_final
+                    }
+
+                    if modo_bgr == "cadastro":
+                        dados_salvar_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+                        inserir_registro("modelos_bgr", dados_salvar_bgr)
+
+                        registrar_auditoria(
+                            "CADASTRO",
+                            "modelos_bgr",
+                            f"Relatório BGR cadastrado: {dados_salvar_bgr['nome']}",
+                            dados_depois=dados_salvar_bgr
+                        )
+
+                        st.success("Modelo BGR cadastrado com sucesso!")
+
+                    else:
+                        dados_antes_bgr = dados_bgr_edicao.copy()
+
+                        if arquivo_upload_bgr is not None:
+                            dados_salvar_bgr["data_upload"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+                        dados_depois_bgr = dados_antes_bgr.copy()
+                        dados_depois_bgr.update(dados_salvar_bgr)
+
+                        atualizar_registro(
+                            "modelos_bgr",
+                            int(id_edit_bgr),
+                            dados_salvar_bgr
+                        )
+
+                        registrar_auditoria(
+                            "ALTERAÇÃO",
+                            "modelos_bgr",
+                            f"Relatório BGR alterado: {dados_depois_bgr['nome']}",
+                            dados_antes=dados_antes_bgr,
+                            dados_depois=dados_depois_bgr
+                        )
+
+                        st.success("Modelo BGR alterado com sucesso!")
+
+                    st.session_state["modo_bgr"] = "cadastro"
+                    st.session_state["editando_bgr"] = None
+                    st.session_state["expandir_form_bgr"] = False
+
+                    st.rerun()
+
         if df_bgr.empty:
             st.info("Nenhum modelo BGR cadastrado.")
         else:
