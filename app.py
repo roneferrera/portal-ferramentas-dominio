@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import unicodedata
 import re
+import json
+import ast
 from datetime import datetime
 from io import BytesIO
 from supabase import create_client, Client
-
 # =========================================================
 # CONFIGURAÇÃO GERAL
 # =========================================================
@@ -795,10 +796,10 @@ def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plura
                     f"<div class='sel-ok'>Pronto para excluir {qtd} item(ns). A confirmação aparecerá abaixo da lista.</div>",
                     unsafe_allow_html=True
                 )
-            else:
-                st.markdown(
-                    '<div class="sel-tip">Marque itens individualmente ou use <strong>Marcar filtrados</strong>.</div>',
-                    unsafe_allow_html=True
+        else:
+            st.markdown(
+                '<div class="sel-tip">Marque itens individualmente ou use <strong>Marcar filtrados</strong>.</div>',
+                unsafe_allow_html=True
                 )
 
     return qtd
@@ -1740,73 +1741,15 @@ elif pagina == "Painel Administrativo":
     # ABA 5 — AUDITORIA
     # =====================================================
 
-    with aba5:
-        st.subheader("🔍 Auditoria de Movimentações")
-
-        df_aud = carregar_tabela("auditoria")
-
-        if df_aud.empty:
-            st.info("Nenhuma movimentação registrada.")
-        else:
-            au1, au2, au3 = st.columns(3)
-
-            with au1:
-                f_acao = st.selectbox(
-                    "Ação:",
-                    [
-                        "Todas",
-                        "CADASTRO",
-                        "UPLOAD",
-                        "EDIÇÃO",
-                        "EXCLUSÃO",
-                        "EXCLUSÃO EM LOTE",
-                        "RESTAURAÇÃO",
-                        "EXPORTAÇÃO"
-                    ],
-                    key="f_acao_aud"
-                )
-
-            with au2:
-                f_tab_aud = st.selectbox(
-                    "Tabela:",
-                    [
-                        "Todas",
-                        "conversores",
-                        "modelos_bgr",
-                        "solicitacoes_bgr",
-                        "todas"
-                    ],
-                    key="f_tab_aud"
-                )
-
-            with au3:
-                busca_aud = st.text_input(
-                    "Buscar descrição:",
-                    key="busca_aud"
-                )
-
-            df_aud_f = df_aud.copy()
-
-            if f_acao != "Todas":
-                df_aud_f = df_aud_f[df_aud_f["acao"] == f_acao]
-
-            if f_tab_aud != "Todas":
-                df_aud_f = df_aud_f[df_aud_f["tabela"] == f_tab_aud]
-
-            if busca_aud:
-                df_aud_f = df_aud_f[
-                    df_aud_f["descricao"].astype(str).str.contains(busca_aud, case=False, na=False)
-                ]
-
-            st.caption(f"{len(df_aud_f)} registro(s)")
-            st.dataframe(df_aud_f, use_container_width=True)
-
-            excel_aud = gerar_excel_download({"Auditoria": df_aud_f})
-
-            st.download_button(
-                "📥 Exportar auditoria",
-                data=excel_aud,
-                file_name="auditoria.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_aud"
-            )
+def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""):
+    try:
+        inserir_registro("auditoria", {
+            "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "acao": acao,
+            "tabela": tabela,
+            "descricao": descricao,
+            "dados_antes": dados_antes,
+            "dados_depois": dados_depois
+        })
+    except Exception as e:
+        st.warning(f"Auditoria não registrada: {e}")
