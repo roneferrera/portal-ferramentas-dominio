@@ -187,13 +187,82 @@ section[data-testid="stSidebar"] {
     border: 1px solid var(--tr-border);
     text-align: center;
     box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-    min-height: 140px;
+    min-height: 205px;
+    transition: all 0.2s ease-in-out;
+}
+
+.setor-card:hover {
+    background-color: var(--tr-bg-card-hover);
+    border-color: var(--tr-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
 }
 
 .setor-card h1 {
     border-left: none;
     padding-left: 0;
     color: var(--tr-orange);
+    margin-bottom: 10px;
+}
+
+.setor-card h4 {
+    color: var(--tr-text-main);
+    margin-bottom: 10px;
+}
+
+.setor-card p {
+    color: var(--tr-text-secondary);
+    margin: 3px 0;
+    font-size: 14px;
+}
+
+.setor-card .total-tools {
+    font-size: 15px;
+    font-weight: 800;
+    color: #F5F5F5;
+    margin-top: 8px;
+}
+
+.setor-card .sub-tools {
+    font-size: 13px;
+    color: #A8A8A8;
+}
+
+.tipo-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255, 128, 0, 0.16);
+    border: 1px solid rgba(255, 128, 0, 0.45);
+    color: #FFB366;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.tipo-badge-bgr {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(66, 165, 245, 0.18);
+    border: 1px solid rgba(66, 165, 245, 0.45);
+    color: #90CAF9;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.central-card {
+    background-color: #1F1F1F;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.central-card:hover {
+    border-color: #FF8000;
+    background-color: #252525;
 }
 
 .aviso-admin {
@@ -202,6 +271,10 @@ section[data-testid="stSidebar"] {
     background-color: var(--tr-warning-bg);
     color: var(--tr-warning-text);
     border: 1px solid var(--tr-orange);
+}
+
+.aviso-admin strong {
+    color: var(--tr-warning-text);
 }
 
 [data-testid="stMetric"] {
@@ -1042,6 +1115,306 @@ def barra_selecao_lixeira(key_ids, df_filtrado, prefixo_chk):
     return qtd
 
 # =========================================================
+# CENTRAL DE FERRAMENTAS E RELATÓRIOS
+# =========================================================
+
+def montar_df_central_ferramentas(df_conversores, df_modelos):
+    lista = []
+
+    if df_conversores is not None and not df_conversores.empty:
+        for _, row in df_conversores.iterrows():
+            lista.append({
+                "tipo": "Conversor",
+                "id_origem": row.get("id", ""),
+                "nome": valor_texto(row.get("nome", "")),
+                "departamento": valor_texto(row.get("departamento", "")),
+                "descricao": valor_texto(row.get("descricao", "")),
+                "status": valor_texto(row.get("status", "")),
+                "url": valor_texto(row.get("url", "")),
+                "imagem": "",
+                "arquivo_bgr": "",
+                "data": valor_texto(row.get("data_cadastro", "")),
+                "origem": "conversores"
+            })
+
+    if df_modelos is not None and not df_modelos.empty:
+        for _, row in df_modelos.iterrows():
+            lista.append({
+                "tipo": "Relatório BGR",
+                "id_origem": row.get("id", ""),
+                "nome": valor_texto(row.get("nome", "")),
+                "departamento": valor_texto(row.get("departamento", "")),
+                "descricao": valor_texto(row.get("descricao", "")),
+                "status": valor_texto(row.get("status", "")),
+                "url": "",
+                "imagem": valor_texto(row.get("imagem", "")),
+                "arquivo_bgr": valor_texto(row.get("arquivo_bgr", "")),
+                "data": valor_texto(row.get("data_upload", "")),
+                "origem": "modelos_bgr"
+            })
+
+    df = pd.DataFrame(lista)
+
+    if df.empty:
+        return df
+
+    df["nome_ordem"] = df["nome"].astype(str).str.lower()
+    df = df.sort_values(["departamento", "tipo", "nome_ordem"]).drop(columns=["nome_ordem"])
+
+    return df
+
+
+def render_central_ferramentas():
+    st.title("🧩 Central de Ferramentas e Relatórios")
+    st.write("Consulte conversores e relatórios BGR em uma única tela, organizados por departamento.")
+
+    df_conversores = carregar_tabela("conversores")
+    df_modelos = carregar_tabela("modelos_bgr")
+
+    df_central = montar_df_central_ferramentas(df_conversores, df_modelos)
+
+    if df_central.empty:
+        st.info("Nenhuma ferramenta ou relatório cadastrado.")
+        return
+
+    opcoes_dep = ["Todos"] + DEPARTAMENTOS
+
+    departamento_pre = st.session_state.get("departamento_central", "Todos")
+
+    if departamento_pre not in opcoes_dep:
+        departamento_pre = "Todos"
+
+    idx_dep = opcoes_dep.index(departamento_pre)
+
+    f1, f2, f3, f4 = st.columns([2.4, 1.8, 1.8, 3])
+
+    with f1:
+        filtro_departamento = st.selectbox(
+            "Departamento:",
+            opcoes_dep,
+            index=idx_dep,
+            key="filtro_dep_central"
+        )
+
+    with f2:
+        filtro_tipo = st.selectbox(
+            "Tipo:",
+            ["Todos", "Conversor", "Relatório BGR"],
+            key="filtro_tipo_central"
+        )
+
+    with f3:
+        filtro_status = st.selectbox(
+            "Status:",
+            ["Todos"] + STATUS_FERRAMENTAS,
+            key="filtro_status_central"
+        )
+
+    with f4:
+        busca = st.text_input(
+            "Buscar:",
+            placeholder="Nome ou descrição...",
+            key="busca_central"
+        )
+
+    df_f = df_central.copy()
+
+    if filtro_departamento != "Todos":
+        df_f = df_f[df_f["departamento"] == filtro_departamento]
+
+    if filtro_tipo != "Todos":
+        df_f = df_f[df_f["tipo"] == filtro_tipo]
+
+    if filtro_status != "Todos":
+        df_f = df_f[df_f["status"] == filtro_status]
+
+    if busca:
+        df_f = df_f[
+            df_f["nome"].astype(str).str.contains(busca, case=False, na=False) |
+            df_f["descricao"].astype(str).str.contains(busca, case=False, na=False)
+        ]
+
+    st.write("---")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.metric("Total encontrado", len(df_f))
+
+    with c2:
+        st.metric("Conversores", len(df_f[df_f["tipo"] == "Conversor"]) if not df_f.empty else 0)
+
+    with c3:
+        st.metric("Relatórios BGR", len(df_f[df_f["tipo"] == "Relatório BGR"]) if not df_f.empty else 0)
+
+    st.write("---")
+
+    if df_f.empty:
+        st.info("Nenhum item encontrado com os filtros selecionados.")
+        return
+
+    for _, row in df_f.iterrows():
+        tipo = valor_texto(row.get("tipo", ""))
+        id_origem = valor_texto(row.get("id_origem", ""))
+        nome = valor_texto(row.get("nome", ""))
+        departamento = valor_texto(row.get("departamento", ""))
+        descricao = valor_texto(row.get("descricao", ""))
+        status = valor_texto(row.get("status", ""))
+        url = valor_texto(row.get("url", ""))
+        imagem = valor_texto(row.get("imagem", ""))
+        arquivo_bgr = valor_texto(row.get("arquivo_bgr", ""))
+        data = valor_texto(row.get("data", ""))
+        origem = valor_texto(row.get("origem", ""))
+
+        chave = f"{origem}_{id_origem}"
+
+        badge = "tipo-badge" if tipo == "Conversor" else "tipo-badge-bgr"
+        label_tipo = "🛠️ Conversor" if tipo == "Conversor" else "📄 Relatório BGR"
+
+        st.markdown("<div class='central-card'>", unsafe_allow_html=True)
+
+        l1, l2, l3, l4 = st.columns([3.2, 1.8, 1.4, 1.3])
+
+        with l1:
+            st.markdown(
+                f"<span class='{badge}'>{label_tipo}</span>",
+                unsafe_allow_html=True
+            )
+            st.markdown(f"### {nome}")
+            st.caption(descricao[:120] + "…" if len(descricao) > 120 else descricao)
+
+        with l2:
+            st.markdown("**Departamento**")
+            st.write(departamento)
+
+        with l3:
+            st.markdown("**Status**")
+            st.markdown(status_html(status), unsafe_allow_html=True)
+
+        with l4:
+            st.markdown("**Ação**")
+
+            if tipo == "Conversor":
+                if status == "Ativo" and url:
+                    st.markdown(
+                        f'<a class="botao-link" href="{url}" target="_blank">🔗 Acessar</a>',
+                        unsafe_allow_html=True
+                    )
+                elif status == "Em manutenção":
+                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
+
+            else:
+                if status == "Ativo" and arquivo_bgr:
+                    st.markdown('<span class="status-ativo">📄 Disponível</span>', unsafe_allow_html=True)
+                elif status == "Em manutenção":
+                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
+
+        with st.expander("Ver detalhes", expanded=False):
+            d1, d2 = st.columns([3, 1])
+
+            with d1:
+                st.markdown(f"**Tipo:** {label_tipo}")
+                st.markdown(f"**Nome:** {nome}")
+                st.markdown(f"**Departamento:** {departamento}")
+                st.markdown(f"**Status:** {status_html(status)}", unsafe_allow_html=True)
+                st.markdown(f"**Descrição:** {descricao}")
+
+                if data:
+                    st.markdown(f"**Data:** {data}")
+
+                if tipo == "Conversor":
+                    if status == "Ativo" and url:
+                        st.markdown(
+                            f'<a class="botao-link" href="{url}" target="_blank">🔗 Acessar conversor</a>',
+                            unsafe_allow_html=True
+                        )
+                    elif status == "Em manutenção":
+                        st.warning("Este conversor está temporariamente em manutenção.")
+                    else:
+                        st.info("Este conversor está em desenvolvimento.")
+
+            with d2:
+                if tipo == "Relatório BGR" and imagem:
+                    img_url = url_publica(BUCKET_IMAGENS, imagem)
+
+                    if img_url:
+                        st.image(img_url, caption="Prévia", use_container_width=True)
+
+            if tipo == "Relatório BGR":
+                if status != "Ativo":
+                    st.info("Este relatório BGR ainda não está disponível para download.")
+                elif not arquivo_bgr:
+                    st.warning("Este relatório BGR não possui arquivo vinculado.")
+                else:
+                    st.write("---")
+                    st.markdown("**Preencha os dados para liberar o download:**")
+
+                    with st.form(f"form_bgr_central_{chave}"):
+                        fc1, fc2 = st.columns(2)
+
+                        with fc1:
+                            nome_u = st.text_input("Nome", key=f"central_nome_{chave}")
+                            email_u = st.text_input("E-mail", key=f"central_email_{chave}")
+                            cnpj_u = st.text_input("CNPJ", key=f"central_cnpj_{chave}")
+
+                        with fc2:
+                            cod_u = st.text_input(
+                                "Código cliente Domínio",
+                                key=f"central_cod_{chave}"
+                            )
+                            obs_u = st.text_area(
+                                "Observações",
+                                key=f"central_obs_{chave}",
+                                height=90
+                            )
+
+                        sub = st.form_submit_button("📥 Registrar e liberar download")
+
+                        if sub:
+                            if not nome_u:
+                                st.warning("Informe o nome.")
+                            elif not email_valido(email_u):
+                                st.warning("Informe um e-mail válido.")
+                            elif not cnpj_u:
+                                st.warning("Informe o CNPJ.")
+                            elif not cod_u:
+                                st.warning("Informe o código cliente Domínio.")
+                            else:
+                                inserir_registro("solicitacoes_bgr", {
+                                    "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                                    "nome_usuario": nome_u,
+                                    "email_usuario": email_u,
+                                    "cnpj": cnpj_u,
+                                    "codigo_cliente_dominio": cod_u,
+                                    "departamento": departamento,
+                                    "modelo": nome,
+                                    "arquivo_bgr": arquivo_bgr,
+                                    "observacao": obs_u,
+                                    "status": "Liberado"
+                                })
+
+                                st.session_state[f"central_bgr_liberado_{chave}"] = True
+                                st.success("Solicitação registrada! Download liberado.")
+
+                    if st.session_state.get(f"central_bgr_liberado_{chave}", False):
+                        bgr_bytes = baixar_arquivo(BUCKET_BGR, arquivo_bgr)
+
+                        if bgr_bytes:
+                            st.download_button(
+                                "⬇️ Baixar .BGR",
+                                data=bgr_bytes,
+                                file_name=arquivo_bgr,
+                                mime="application/octet-stream",
+                                key=f"central_dl_bgr_{chave}"
+                            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
 # LIXEIRA — ABA
 # =========================================================
 
@@ -1374,181 +1747,6 @@ def inicializar_conversores_padrao():
         inserir_registro("conversores", c)
 
 # =========================================================
-# LISTA PÚBLICA
-# =========================================================
-
-_COLS = [0.7, 2.8, 3.2, 2.0, 1.4, 1.3]
-_CAB = ["Expandir /\nOcultar", "Nome", "Descrição", "Departamento", "Status", "Acesso"]
-_CAB_STYLE = "font-size:11px;font-weight:700;color:#A8A8A8;text-transform:uppercase;letter-spacing:.05em"
-
-
-def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
-    if df_filtrado is None or df_filtrado.empty:
-        st.info("Nenhum item encontrado para os filtros selecionados.")
-        return
-
-    st.caption(f"{len(df_filtrado)} item(s) encontrado(s)")
-
-    cols_cab = st.columns(_COLS)
-
-    for col, titulo in zip(cols_cab, _CAB):
-        col.markdown(f"<span style='{_CAB_STYLE}'>{titulo}</span>", unsafe_allow_html=True)
-
-    st.markdown("<hr style='margin:4px 0 6px 0;border-color:#444'>", unsafe_allow_html=True)
-
-    for idx, row in df_filtrado.iterrows():
-        nome_i = valor_texto(row.get("nome", ""))
-        dep_i = valor_texto(row.get("departamento", ""))
-        desc_i = valor_texto(row.get("descricao", ""))
-        stat_i = valor_texto(row.get("status", ""))
-        url_i = valor_texto(row.get("url", ""))
-        img_i = valor_texto(row.get("imagem", ""))
-        bgr_i = valor_texto(row.get("arquivo_bgr", ""))
-        data_i = valor_texto(row.get("data_cadastro", row.get("data_upload", "")))
-
-        desc_curta = (desc_i[:45] + "…") if len(desc_i) > 45 else desc_i
-
-        chave_exp = f"exp_{tipo}_{idx}"
-        expandido = st.session_state.get(chave_exp, False)
-
-        c0, c1, c2, c3, c4, c5 = st.columns(_COLS)
-
-        with c0:
-            btn_ico = "➖" if expandido else "➕"
-
-            if st.button(
-                btn_ico,
-                key=f"toggle_{tipo}_{idx}",
-                help="Expandir / Ocultar detalhes",
-                use_container_width=False
-            ):
-                st.session_state[chave_exp] = not expandido
-                st.rerun()
-
-        with c1:
-            st.markdown(
-                f"<span style='font-weight:700;color:#F5F5F5;font-size:13px'>{nome_i}</span>",
-                unsafe_allow_html=True
-            )
-
-        with c2:
-            st.markdown(
-                f"<span style='color:#A8A8A8;font-size:12px'>{desc_curta}</span>",
-                unsafe_allow_html=True
-            )
-
-        with c3:
-            st.markdown(
-                f"<span style='color:#D0D0D0;font-size:12px'>{dep_i}</span>",
-                unsafe_allow_html=True
-            )
-
-        with c4:
-            st.markdown(status_html(stat_i), unsafe_allow_html=True)
-
-        with c5:
-            if tipo == "conversor":
-                if stat_i == "Ativo" and url_i:
-                    st.markdown(
-                        f'<a class="botao-link" href="{url_i}" target="_blank">🔗 Acessar</a>',
-                        unsafe_allow_html=True
-                    )
-                elif stat_i == "Em manutenção":
-                    st.markdown('<span class="status-manutencao">⚙ Manutenção</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<span class="status-desenvolvimento">🔧 Em dev.</span>', unsafe_allow_html=True)
-            else:
-                if bgr_i:
-                    st.markdown('<span class="status-ativo">📄 BGR</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<span class="status-desenvolvimento">📄 Sem arq.</span>', unsafe_allow_html=True)
-
-        if expandido:
-            st.markdown(
-                "<div style='background:#1a1a1a;border:1px solid #FF8000;"
-                "border-radius:10px;padding:20px 24px;margin:4px 0 10px 0'>",
-                unsafe_allow_html=True
-            )
-
-            d1, d2 = st.columns([3, 1])
-
-            with d1:
-                st.markdown(f"**Nome:** {nome_i}")
-                st.markdown(f"**Descrição:** {desc_i}")
-                st.markdown(f"**Departamento:** {dep_i}")
-                st.markdown(f"**Status:** {status_html(stat_i)}", unsafe_allow_html=True)
-
-                if data_i:
-                    st.markdown(f"**Data de cadastro:** {data_i}")
-
-            with d2:
-                if img_i:
-                    iu = url_publica(BUCKET_IMAGENS, img_i)
-
-                    if iu:
-                        st.image(iu, caption="Prévia", use_container_width=True)
-
-            if tipo == "bgr" and bgr_i:
-                st.write("---")
-                st.markdown("**Preencha os dados para liberar o download:**")
-
-                with st.form(f"form_bgr_pub_{idx}"):
-                    fc1, fc2 = st.columns(2)
-
-                    with fc1:
-                        nome_u = st.text_input("Nome", key=f"bgr_nome_{idx}")
-                        email_u = st.text_input("E-mail", key=f"bgr_email_{idx}")
-                        cnpj_u = st.text_input("CNPJ", key=f"bgr_cnpj_{idx}")
-
-                    with fc2:
-                        cod_u = st.text_input("Código cliente Domínio", key=f"bgr_cod_{idx}")
-                        obs_u = st.text_area("Observações", key=f"bgr_obs_{idx}", height=90)
-
-                    sub = st.form_submit_button("📥 Registrar e liberar download")
-
-                    if sub:
-                        if not nome_u:
-                            st.warning("Informe o nome.")
-                        elif not email_valido(email_u):
-                            st.warning("Informe um e-mail válido.")
-                        elif not cnpj_u:
-                            st.warning("Informe o CNPJ.")
-                        elif not cod_u:
-                            st.warning("Informe o código cliente Domínio.")
-                        else:
-                            inserir_registro("solicitacoes_bgr", {
-                                "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                                "nome_usuario": nome_u,
-                                "email_usuario": email_u,
-                                "cnpj": cnpj_u,
-                                "codigo_cliente_dominio": cod_u,
-                                "departamento": dep_i,
-                                "modelo": nome_i,
-                                "arquivo_bgr": bgr_i,
-                                "observacao": obs_u,
-                                "status": "Liberado"
-                            })
-
-                            st.session_state[f"bgr_liberado_{idx}"] = True
-                            st.success("Solicitação registrada! Download liberado.")
-
-                if st.session_state.get(f"bgr_liberado_{idx}", False):
-                    bgr_bytes = baixar_arquivo(BUCKET_BGR, bgr_i)
-
-                    if bgr_bytes:
-                        st.download_button(
-                            "⬇️ Baixar .BGR",
-                            data=bgr_bytes,
-                            file_name=bgr_i,
-                            mime="application/octet-stream",
-                            key=f"dl_bgr_pub_{idx}"
-                        )
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<hr style='margin:2px 0 2px 0;border-color:#2a2a2a'>", unsafe_allow_html=True)
-
-# =========================================================
 # INICIALIZAÇÃO
 # =========================================================
 
@@ -1562,9 +1760,18 @@ mostrar_logo()
 st.sidebar.write("---")
 st.sidebar.subheader("Menu público")
 
+opcoes_publicas = [
+    "Início",
+    "Central de Ferramentas e Relatórios"
+]
+
+if st.session_state.get("menu_publico") not in opcoes_publicas:
+    st.session_state["menu_publico"] = "Início"
+
 pagina_publica = st.sidebar.radio(
     "Selecione uma opção:",
-    ["Início", "Conversores", "Relatórios BGR"]
+    opcoes_publicas,
+    key="menu_publico"
 )
 
 st.sidebar.write("---")
@@ -1586,19 +1793,27 @@ if pagina == "Início":
     df_modelos = carregar_tabela("modelos_bgr")
     df_solicitacoes = carregar_tabela("solicitacoes_bgr")
 
+    total_conversores = len(df_conversores)
+    total_bgr = len(df_modelos)
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Conversores cadastrados", len(df_conversores))
+        st.metric("Conversores cadastrados", total_conversores)
 
     with col2:
-        st.metric("Modelos BGR cadastrados", len(df_modelos))
+        st.metric("Relatórios BGR cadastrados", total_bgr)
 
     with col3:
         st.metric("Solicitações BGR", len(df_solicitacoes))
 
     st.write("---")
     st.subheader("Departamentos")
+
+    st.caption(
+        "Clique em um departamento para abrir a Central de Ferramentas e Relatórios "
+        "com conversores e BGRs juntos."
+    )
 
     icones = {
         "Fiscal": "📊",
@@ -1612,123 +1827,55 @@ if pagina == "Início":
 
     for i, dep in enumerate(DEPARTAMENTOS):
         with cols[i]:
-            qtd = 0
+            qtd_conv = 0
+            qtd_bgr = 0
 
             if not df_conversores.empty and "departamento" in df_conversores.columns:
-                qtd = len(df_conversores[df_conversores["departamento"] == dep])
+                qtd_conv = len(df_conversores[df_conversores["departamento"] == dep])
+
+            if not df_modelos.empty and "departamento" in df_modelos.columns:
+                qtd_bgr = len(df_modelos[df_modelos["departamento"] == dep])
+
+            qtd_total = qtd_conv + qtd_bgr
 
             st.markdown(f"""
             <div class="setor-card">
                 <h1>{icones[dep]}</h1>
                 <h4>{dep}</h4>
-                <p>{qtd} ferramenta(s)</p>
+                <p class="total-tools">{qtd_total} ferramenta(s)</p>
+                <p class="sub-tools">{qtd_conv} conversor(es)</p>
+                <p class="sub-tools">{qtd_bgr} BGR</p>
             </div>
             """, unsafe_allow_html=True)
 
-# =========================================================
-# CONVERSORES PÚBLICO
-# =========================================================
-
-elif pagina == "Conversores":
-    st.title("🛠️ Conversores")
-
-    df = carregar_tabela("conversores")
-
-    fc1, fc2, fc3 = st.columns([3, 2, 2])
-
-    with fc1:
-        busca_conv = st.text_input(
-            "🔍 Buscar:",
-            placeholder="Nome ou descrição...",
-            key="busca_conv_pub"
-        )
-
-    with fc2:
-        filtro_dep_conv = st.selectbox(
-            "Departamento:",
-            ["Todos"] + DEPARTAMENTOS,
-            key="fdep_conv_pub"
-        )
-
-    with fc3:
-        filtro_stat_conv = st.selectbox(
-            "Status:",
-            ["Todos"] + STATUS_FERRAMENTAS,
-            key="fstat_conv_pub"
-        )
-
-    df_f = df.copy()
-
-    if not df_f.empty:
-        if busca_conv:
-            df_f = df_f[
-                df_f["nome"].astype(str).str.contains(busca_conv, case=False, na=False) |
-                df_f["descricao"].astype(str).str.contains(busca_conv, case=False, na=False)
-            ]
-
-        if filtro_dep_conv != "Todos":
-            df_f = df_f[df_f["departamento"] == filtro_dep_conv]
-
-        if filtro_stat_conv != "Todos":
-            df_f = df_f[df_f["status"] == filtro_stat_conv]
+            if st.button(
+                f"Ver {dep}",
+                key=f"abrir_dep_{dep}",
+                use_container_width=True
+            ):
+                st.session_state["departamento_central"] = dep
+                st.session_state["filtro_dep_central"] = dep
+                st.session_state["menu_publico"] = "Central de Ferramentas e Relatórios"
+                st.rerun()
 
     st.write("---")
-    _render_lista_publica(df_f, tipo="conversor")
+
+    if st.button(
+        "🔎 Ver todas as ferramentas e relatórios",
+        key="abrir_central_todos",
+        use_container_width=True
+    ):
+        st.session_state["departamento_central"] = "Todos"
+        st.session_state["filtro_dep_central"] = "Todos"
+        st.session_state["menu_publico"] = "Central de Ferramentas e Relatórios"
+        st.rerun()
 
 # =========================================================
-# BGR PÚBLICO
+# CENTRAL DE FERRAMENTAS E RELATÓRIOS
 # =========================================================
 
-elif pagina == "Relatórios BGR":
-    st.title("📄 Relatórios BGR")
-    st.write("Clique em ➕ para ver os detalhes e solicitar o arquivo `.bgr`.")
-
-    df_modelos = carregar_tabela("modelos_bgr")
-
-    fb1, fb2, fb3 = st.columns([3, 2, 2])
-
-    with fb1:
-        busca_bgr = st.text_input(
-            "🔍 Buscar:",
-            placeholder="Nome ou descrição...",
-            key="busca_bgr_pub"
-        )
-
-    with fb2:
-        filtro_dep_bgr = st.selectbox(
-            "Departamento:",
-            ["Todos"] + DEPARTAMENTOS,
-            key="fdep_bgr_pub"
-        )
-
-    with fb3:
-        filtro_stat_bgr = st.selectbox(
-            "Status:",
-            ["Todos"] + STATUS_FERRAMENTAS,
-            key="fstat_bgr_pub"
-        )
-
-    df_bgr_f = pd.DataFrame()
-
-    if not df_modelos.empty:
-        df_bgr_f = df_modelos.copy()
-
-        if busca_bgr:
-            df_bgr_f = df_bgr_f[
-                df_bgr_f["nome"].astype(str).str.contains(busca_bgr, case=False, na=False) |
-                df_bgr_f["descricao"].astype(str).str.contains(busca_bgr, case=False, na=False)
-            ]
-
-        if filtro_dep_bgr != "Todos":
-            df_bgr_f = df_bgr_f[df_bgr_f["departamento"] == filtro_dep_bgr]
-
-        if filtro_stat_bgr != "Todos":
-            df_bgr_f = df_bgr_f[df_bgr_f["status"] == filtro_stat_bgr]
-        else:
-            df_bgr_f = df_bgr_f[df_bgr_f["status"] == "Ativo"]
-
-    st.write("---")
-    _render_lista_publica(df_bgr_f, tipo="bgr")
+elif pagina == "Central de Ferramentas e Relatórios":
+    render_central_ferramentas()
 
 # =========================================================
 # PAINEL ADMINISTRATIVO
