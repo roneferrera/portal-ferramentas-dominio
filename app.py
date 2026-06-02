@@ -103,20 +103,6 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid var(--tr-border);
 }
 
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] div {
-    color: var(--tr-text-secondary);
-}
-
-section[data-testid="stSidebar"] hr {
-    border-color: var(--tr-border);
-}
-
 .botao-link {
     display: inline-block;
     background-color: var(--tr-orange);
@@ -158,26 +144,10 @@ section[data-testid="stSidebar"] hr {
     border-radius: 8px;
 }
 
-.stTextInput input::placeholder,
-.stTextArea textarea::placeholder {
-    color: var(--tr-text-muted);
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus {
-    border-color: var(--tr-orange) !important;
-    box-shadow: 0 0 0 1px var(--tr-orange) !important;
-}
-
 .stSelectbox div[data-baseweb="select"] {
     background-color: var(--tr-bg-input);
     color: var(--tr-text-main);
     border-radius: 8px;
-}
-
-.stRadio label,
-.stCheckbox label {
-    color: var(--tr-text-secondary);
 }
 
 .status-ativo {
@@ -218,29 +188,12 @@ section[data-testid="stSidebar"] hr {
     text-align: center;
     box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     min-height: 140px;
-    transition: all 0.2s ease-in-out;
-}
-
-.setor-card:hover {
-    background-color: var(--tr-bg-card-hover);
-    border-color: var(--tr-orange);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255,128,0,0.18);
 }
 
 .setor-card h1 {
     border-left: none;
     padding-left: 0;
     color: var(--tr-orange);
-}
-
-.setor-card h4 {
-    color: var(--tr-text-main);
-    margin-bottom: 4px;
-}
-
-.setor-card p {
-    color: var(--tr-text-muted);
 }
 
 .aviso-admin {
@@ -251,20 +204,11 @@ section[data-testid="stSidebar"] hr {
     border: 1px solid var(--tr-orange);
 }
 
-.aviso-admin strong {
-    color: var(--tr-warning-text);
-}
-
 [data-testid="stMetric"] {
     background-color: var(--tr-bg-card);
     border: 1px solid var(--tr-border);
     border-radius: 14px;
     padding: 18px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-}
-
-[data-testid="stMetricLabel"] {
-    color: var(--tr-text-muted);
 }
 
 [data-testid="stMetricValue"] {
@@ -298,11 +242,6 @@ section[data-testid="stSidebar"] hr {
     background-color: var(--tr-bg-card);
 }
 
-div[data-testid="stAlert"] {
-    border-radius: 10px;
-    border: 1px solid var(--tr-border);
-}
-
 div[data-testid="stExpander"] {
     background-color: var(--tr-bg-card);
     border: 1px solid var(--tr-border);
@@ -322,30 +261,6 @@ hr {
 
 a {
     color: var(--tr-orange);
-}
-
-a:hover {
-    color: var(--tr-orange-dark);
-}
-
-.lixeira-restaurar {
-    padding: 12px 16px;
-    border-radius: 10px;
-    background-color: var(--tr-danger-bg);
-    border: 1px solid #c62828;
-    margin-bottom: 10px;
-}
-
-.lixeira-restaurar strong {
-    color: var(--tr-danger-text);
-}
-
-div[data-testid="stButton"] button[kind="secondary"] {
-    padding: 2px 8px !important;
-    font-size: 16px !important;
-    line-height: 1 !important;
-    min-height: unset !important;
-    border-radius: 6px !important;
 }
 
 .sel-top {
@@ -412,7 +327,7 @@ div[data-testid="stButton"] button {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# SUPABASE — CONEXÃO
+# SUPABASE
 # =========================================================
 
 @st.cache_resource
@@ -422,14 +337,10 @@ def get_supabase() -> Client:
         st.secrets["SUPABASE_KEY"]
     )
 
-# =========================================================
-# SUPABASE — BANCO DE DADOS
-# =========================================================
 
 def carregar_tabela(tabela: str) -> pd.DataFrame:
     try:
-        sb = get_supabase()
-        resp = sb.table(tabela).select("*").execute()
+        resp = get_supabase().table(tabela).select("*").execute()
         return pd.DataFrame(resp.data) if resp.data else pd.DataFrame()
     except Exception as e:
         st.error(f"Erro ao carregar '{tabela}': {e}")
@@ -463,7 +374,7 @@ def excluir_registro(tabela: str, id_registro: int):
         return False
 
 # =========================================================
-# SUPABASE — STORAGE
+# STORAGE
 # =========================================================
 
 def upload_arquivo(bucket, nome, dados_bytes, content_type):
@@ -502,12 +413,76 @@ def url_publica(bucket, nome):
         return ""
 
 # =========================================================
-# AUDITORIA
+# AUXILIARES
 # =========================================================
+
+def valor_texto(v):
+    if v is None:
+        return ""
+
+    try:
+        if pd.isna(v):
+            return ""
+    except Exception:
+        pass
+
+    return str(v).strip()
+
+
+def email_valido(email):
+    email = valor_texto(email)
+    return "@" in email and "." in email
+
+
+def nome_arquivo_seguro(nome):
+    nome = unicodedata.normalize("NFKD", nome)
+    nome = "".join(c for c in nome if not unicodedata.combining(c))
+    nome = re.sub(r"[^\w\.\-]", "_", nome)
+
+    p = nome.rsplit(".", 1)
+
+    return p[0].replace(".", "_") + "." + p[1] if len(p) == 2 else nome
+
+
+def mostrar_logo():
+    st.sidebar.markdown("### 🧩 Portal de Ferramentas")
+
+
+def status_html(status):
+    if status == "Ativo":
+        return '<span class="status-ativo">● Ativo</span>'
+
+    if status == "Em manutenção":
+        return '<span class="status-manutencao">⚙ Em manutenção</span>'
+
+    return '<span class="status-desenvolvimento">🔧 Em desenvolvimento</span>'
+
+
+def gerar_excel_download(dfs: dict):
+    out = BytesIO()
+
+    with pd.ExcelWriter(out, engine="openpyxl") as w:
+        for nome, df in dfs.items():
+            if df is None:
+                df = pd.DataFrame()
+
+            df_temp = df.copy()
+
+            for col in df_temp.columns:
+                df_temp[col] = df_temp[col].apply(
+                    lambda x: json.dumps(x, ensure_ascii=False, default=str)
+                    if isinstance(x, (dict, list, tuple, set))
+                    else x
+                )
+
+            df_temp.to_excel(w, index=False, sheet_name=nome[:31])
+
+    return out.getvalue()
+
 
 def _limpar_objeto_para_json(obj):
     if obj is None:
-        return ""
+        return None
 
     if isinstance(obj, pd.Series):
         return _limpar_objeto_para_json(obj.to_dict())
@@ -523,7 +498,7 @@ def _limpar_objeto_para_json(obj):
 
     try:
         if pd.isna(obj):
-            return ""
+            return None
     except Exception:
         pass
 
@@ -535,6 +510,59 @@ def _limpar_objeto_para_json(obj):
 
     return obj
 
+
+def _parse_dict(valor):
+    if valor is None:
+        return {}
+
+    if isinstance(valor, pd.Series):
+        valor = valor.to_dict()
+
+    if isinstance(valor, dict):
+        return _limpar_objeto_para_json(valor)
+
+    try:
+        if pd.isna(valor):
+            return {}
+    except Exception:
+        pass
+
+    texto = str(valor).strip()
+
+    if not texto or texto.lower() in ["none", "null", "nan", "nat"]:
+        return {}
+
+    try:
+        obj = json.loads(texto)
+
+        if isinstance(obj, dict):
+            return _limpar_objeto_para_json(obj)
+    except Exception:
+        pass
+
+    try:
+        texto_sanitizado = re.sub(r"\bnan\b", "None", texto, flags=re.IGNORECASE)
+        texto_sanitizado = re.sub(r"\bNaT\b", "None", texto_sanitizado)
+
+        obj = ast.literal_eval(texto_sanitizado)
+
+        if isinstance(obj, dict):
+            return _limpar_objeto_para_json(obj)
+    except Exception:
+        pass
+
+    return {}
+
+
+def _bool_supabase(v):
+    if isinstance(v, bool):
+        return v
+
+    return str(v).strip().lower() in ["true", "1", "sim", "yes", "y"]
+
+# =========================================================
+# AUDITORIA
+# =========================================================
 
 def serializar_dados_auditoria(dados):
     if dados is None:
@@ -554,42 +582,7 @@ def serializar_dados_auditoria(dados):
 
 
 def _parse_dados_auditoria(valor):
-    if valor is None:
-        return {}
-
-    if isinstance(valor, dict):
-        return {str(k): _limpar_objeto_para_json(v) for k, v in valor.items()}
-
-    try:
-        if pd.isna(valor):
-            return {}
-    except Exception:
-        pass
-
-    texto = str(valor).strip()
-
-    if not texto or texto.lower() in ["none", "null", "nan", "nat"]:
-        return {}
-
-    try:
-        obj = json.loads(texto)
-        if isinstance(obj, dict):
-            return {str(k): _limpar_objeto_para_json(v) for k, v in obj.items()}
-    except Exception:
-        pass
-
-    try:
-        texto_sanitizado = re.sub(r"\bnan\b", "None", texto, flags=re.IGNORECASE)
-        texto_sanitizado = re.sub(r"\bNaT\b", "None", texto_sanitizado)
-
-        obj = ast.literal_eval(texto_sanitizado)
-
-        if isinstance(obj, dict):
-            return {str(k): _limpar_objeto_para_json(v) for k, v in obj.items()}
-    except Exception:
-        pass
-
-    return {}
+    return _parse_dict(valor)
 
 
 def _formatar_valor_auditoria(valor):
@@ -603,6 +596,9 @@ def _formatar_valor_auditoria(valor):
         pass
 
     valor = _limpar_objeto_para_json(valor)
+
+    if valor is None:
+        return ""
 
     if isinstance(valor, (dict, list, tuple, set)):
         try:
@@ -646,18 +642,10 @@ def expandir_colunas_auditoria(df_auditoria: pd.DataFrame) -> pd.DataFrame:
         "data_upload"
     ]
 
-    campos_ordenados = []
-
-    for campo in campos_preferidos:
-        if campo in campos:
-            campos_ordenados.append(campo)
-
-    outros_campos = sorted(
-        [campo for campo in campos if campo not in campos_ordenados],
-        key=lambda x: x.lower()
+    campos_ordenados = [c for c in campos_preferidos if c in campos]
+    campos_ordenados.extend(
+        sorted([c for c in campos if c not in campos_ordenados], key=lambda x: x.lower())
     )
-
-    campos_ordenados.extend(outros_campos)
 
     colunas_base = [
         c for c in df.columns
@@ -699,161 +687,130 @@ def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""
         return False
 
 # =========================================================
-# LIXEIRA
+# LIXEIRA PERSISTENTE NO SUPABASE
 # =========================================================
 
 def adicionar_lixeira(tabela, registro):
-    if "lixeira" not in st.session_state:
-        st.session_state["lixeira"] = []
-
-    st.session_state["lixeira"].append({
-        "tabela": tabela,
-        "registro": registro,
-        "excluido_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    })
-
-
-def mostrar_lixeira():
-    lixeira = st.session_state.get("lixeira", [])
-
-    if not lixeira:
-        return
-
-    for i, item in enumerate(lixeira):
-        nome_reg = item["registro"].get("nome", f"Registro #{i + 1}")
-
-        cm, cr, cf = st.columns([5, 1.5, 1])
-
-        with cm:
-            st.markdown(
-                f'<div class="lixeira-restaurar">🗑️ <strong>"{nome_reg}"</strong> excluído — {item["excluido_em"]}</div>',
-                unsafe_allow_html=True
-            )
-
-        with cr:
-            if st.button("↩️ Restaurar", key=f"restaurar_{i}"):
-                d = {k: v for k, v in item["registro"].items() if k != "id"}
-
-                if inserir_registro(item["tabela"], d):
-                    registrar_auditoria(
-                        "RESTAURAÇÃO",
-                        item["tabela"],
-                        f"Restaurado: {nome_reg}",
-                        dados_depois=d
-                    )
-
-                    st.session_state["lixeira"].pop(i)
-                    st.success(f'"{nome_reg}" restaurado!')
-                    st.rerun()
-
-        with cf:
-            if st.button("✖", key=f"fechar_lixeira_{i}"):
-                st.session_state["lixeira"].pop(i)
-                st.rerun()
-
-# =========================================================
-# FUNÇÕES AUXILIARES
-# =========================================================
-
-def inicializar_conversores_padrao():
-    df = carregar_tabela("conversores")
-
-    if not df.empty:
-        return
-
-    conversores_padrao = [
-        {
-            "nome": "Gerador RPA TXT",
-            "departamento": "Folha de Pagamento",
-            "descricao": "Gera arquivos TXT para processamento por RPA.",
-            "url": "https://gerador-rpa-txt.streamlit.app/",
-            "status": "Ativo"
-        },
-        {
-            "nome": "Converte Bens Domínio",
-            "departamento": "Patrimônio",
-            "descricao": "Conversor de bens patrimoniais para leiaute Domínio.",
-            "url": "https://convertebensdominio.streamlit.app/",
-            "status": "Ativo"
-        },
-        {
-            "nome": "Eventos Com Plano / Sem Plano",
-            "departamento": "Fiscal",
-            "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
-            "url": "https://eventos-complano-semplano.streamlit.app/",
-            "status": "Ativo"
-        },
-        {
-            "nome": "Clientes e Fornecedores - Conta Patrimonial",
-            "departamento": "Contabilidade",
-            "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
-            "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
-            "status": "Ativo"
-        },
-        {
-            "nome": "Conversor Leiaute com Separador Domínio",
-            "departamento": "Fiscal",
-            "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
-            "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
-            "status": "Ativo"
-        },
-    ]
-
-    for c in conversores_padrao:
-        c["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        inserir_registro("conversores", c)
-
-
-def status_html(status):
-    if status == "Ativo":
-        return '<span class="status-ativo">● Ativo</span>'
-    elif status == "Em manutenção":
-        return '<span class="status-manutencao">⚙ Em manutenção</span>'
-
-    return '<span class="status-desenvolvimento">🔧 Em desenvolvimento</span>'
-
-
-def gerar_excel_download(dfs: dict):
-    out = BytesIO()
-
-    with pd.ExcelWriter(out, engine="openpyxl") as w:
-        for nome, df in dfs.items():
-            if df is None:
-                df = pd.DataFrame()
-            df.to_excel(w, index=False, sheet_name=nome[:31])
-
-    return out.getvalue()
-
-
-def mostrar_logo():
-    st.sidebar.markdown("### 🧩 Portal de Ferramentas")
-
-
-def nome_arquivo_seguro(nome):
-    nome = unicodedata.normalize("NFKD", nome)
-    nome = "".join(c for c in nome if not unicodedata.combining(c))
-    nome = re.sub(r"[^\w\.\-]", "_", nome)
-
-    p = nome.rsplit(".", 1)
-
-    return p[0].replace(".", "_") + "." + p[1] if len(p) == 2 else nome
-
-
-def valor_texto(v):
-    if v is None:
-        return ""
-
     try:
-        if pd.isna(v):
-            return ""
-    except Exception:
-        pass
+        registro_limpo = _limpar_objeto_para_json(registro)
 
-    return str(v).strip()
+        if not isinstance(registro_limpo, dict):
+            registro_limpo = {}
+
+        nome = valor_texto(registro_limpo.get("nome", ""))
+
+        payload = {
+            "data_hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "tabela": tabela,
+            "nome": nome,
+            "registro": registro_limpo,
+            "restaurado": False,
+            "restaurado_em": ""
+        }
+
+        get_supabase().table("lixeira").insert(payload).execute()
+        return True
+
+    except Exception as e:
+        st.error(f"Erro ao enviar item para a lixeira: {e}")
+        return False
 
 
-def email_valido(email):
-    return "@" in str(email).strip() and "." in str(email).strip()
+def carregar_lixeira(apenas_nao_restaurados=True):
+    try:
+        resp = get_supabase().table("lixeira").select("*").execute()
+        df = pd.DataFrame(resp.data) if resp.data else pd.DataFrame()
+
+        if df.empty:
+            return df
+
+        if apenas_nao_restaurados and "restaurado" in df.columns:
+            df = df[~df["restaurado"].apply(_bool_supabase)]
+
+        if "id" in df.columns:
+            df = df.sort_values("id", ascending=False)
+
+        return df
+
+    except Exception as e:
+        st.error(f"Erro ao carregar lixeira: {e}")
+        return pd.DataFrame()
+
+
+def restaurar_item_lixeira(item, acao_auditoria="RESTAURAÇÃO"):
+    try:
+        if isinstance(item, pd.Series):
+            item = item.to_dict()
+
+        id_lixeira = int(item.get("id"))
+        tabela = valor_texto(item.get("tabela", ""))
+        registro = _parse_dict(item.get("registro", {}))
+
+        if tabela not in ["conversores", "modelos_bgr"]:
+            st.error("A tabela de origem da lixeira não é válida para restauração.")
+            return False
+
+        if not registro:
+            st.error("Registro da lixeira vazio ou inválido.")
+            return False
+
+        dados_restaurar = {
+            k: v for k, v in registro.items()
+            if k != "id"
+        }
+
+        nome = valor_texto(registro.get("nome", item.get("nome", "registro")))
+
+        if not inserir_registro(tabela, dados_restaurar):
+            return False
+
+        get_supabase().table("lixeira").update({
+            "restaurado": True,
+            "restaurado_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }).eq("id", id_lixeira).execute()
+
+        registrar_auditoria(
+            acao_auditoria,
+            tabela,
+            f"Restaurado da lixeira: {nome}",
+            dados_depois=dados_restaurar
+        )
+
+        return True
+
+    except Exception as e:
+        st.error(f"Erro ao restaurar item da lixeira: {e}")
+        return False
+
+
+def excluir_lixeira_definitivo(item, acao_auditoria="EXCLUSÃO DEFINITIVA"):
+    try:
+        if isinstance(item, pd.Series):
+            item = item.to_dict()
+
+        id_lixeira = int(item.get("id"))
+        tabela = valor_texto(item.get("tabela", ""))
+        nome = valor_texto(item.get("nome", "registro"))
+        registro = _parse_dict(item.get("registro", {}))
+
+        get_supabase().table("lixeira").delete().eq("id", id_lixeira).execute()
+
+        registrar_auditoria(
+            acao_auditoria,
+            "lixeira",
+            f"Item removido definitivamente da lixeira: {nome}",
+            dados_antes={
+                "id_lixeira": id_lixeira,
+                "tabela_origem": tabela,
+                "registro": registro
+            }
+        )
+
+        return True
+
+    except Exception as e:
+        st.error(f"Erro ao excluir definitivamente da lixeira: {e}")
+        return False
 
 # =========================================================
 # SELEÇÃO MÚLTIPLA
@@ -1000,7 +957,7 @@ def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plura
         with b4:
             if qtd > 0:
                 st.markdown(
-                    f"<div class='sel-ok'>Pronto para excluir {qtd} item(ns). A confirmação aparecerá abaixo da lista.</div>",
+                    f"<div class='sel-ok'>Pronto para excluir {qtd} item(ns). A confirmação aparecerá abaixo.</div>",
                     unsafe_allow_html=True
                 )
             else:
@@ -1010,6 +967,411 @@ def barra_selecao_lote(key_ids, df_filtrado, prefixo_chk, sufixo_key, nome_plura
                 )
 
     return qtd
+
+
+def barra_selecao_lixeira(key_ids, df_filtrado, prefixo_chk):
+    inicializar_selecao(key_ids)
+
+    qtd = len(st.session_state[key_ids])
+    total = 0 if df_filtrado is None else len(df_filtrado)
+
+    with container_com_borda():
+        st.markdown(
+            f"""
+            <div class="sel-top">
+                <div>
+                    <div class="sel-title">☑️ Seleção em lote da lixeira</div>
+                    <div class="sel-subtitle">
+                        {qtd} de {total} item(ns) filtrado(s) selecionado(s)
+                    </div>
+                </div>
+                <div class="sel-pill">{qtd} selecionado(s)</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        b1, b2, b3, b4, b5 = st.columns([1.4, 1.0, 1.5, 1.8, 2.8])
+
+        with b1:
+            if st.button("✅ Marcar filtrados", key="sel_todos_lixeira", use_container_width=True):
+                selecionar_todos_filtrados(key_ids, df_filtrado, prefixo_chk)
+                st.rerun()
+
+        with b2:
+            if st.button("🧹 Limpar", key="limpar_sel_lixeira", use_container_width=True):
+                limpar_selecao(key_ids, prefixo_chk)
+                st.session_state.pop("popup_rest_lixeira", None)
+                st.session_state.pop("popup_deldef_lixeira", None)
+                st.rerun()
+
+        with b3:
+            if st.button(
+                "↩️ Restaurar",
+                key="btn_rest_lixeira_lote",
+                disabled=qtd == 0,
+                use_container_width=True
+            ):
+                st.session_state["popup_rest_lixeira"] = True
+                st.session_state.pop("popup_deldef_lixeira", None)
+                st.rerun()
+
+        with b4:
+            if st.button(
+                "🧨 Excluir definitivo",
+                key="btn_deldef_lixeira_lote",
+                disabled=qtd == 0,
+                use_container_width=True
+            ):
+                st.session_state["popup_deldef_lixeira"] = True
+                st.session_state.pop("popup_rest_lixeira", None)
+                st.rerun()
+
+        with b5:
+            if qtd > 0:
+                st.markdown(
+                    f"<div class='sel-ok'>{qtd} item(ns) selecionado(s) para ação em lote.</div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    "<div class='sel-tip'>Selecione itens para restaurar ou excluir definitivamente.</div>",
+                    unsafe_allow_html=True
+                )
+
+    return qtd
+
+# =========================================================
+# LIXEIRA — ABA
+# =========================================================
+
+def _tipo_lixeira(tabela):
+    if tabela == "conversores":
+        return "Conversor"
+
+    if tabela == "modelos_bgr":
+        return "Relatório BGR"
+
+    return tabela
+
+
+def render_card_lixeira(item):
+    if isinstance(item, pd.Series):
+        item = item.to_dict()
+
+    id_lixeira = int(item.get("id"))
+    tabela = valor_texto(item.get("tabela", ""))
+    nome = valor_texto(item.get("nome", "")) or "Sem nome"
+    data_hora = valor_texto(item.get("data_hora", ""))
+    registro = _parse_dict(item.get("registro", {}))
+    tipo_item = _tipo_lixeira(tabela)
+
+    with st.expander(
+        f"🗑️ {tipo_item}: {nome} — excluído em {data_hora}",
+        expanded=False
+    ):
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.markdown(f"**Tipo:** {tipo_item}")
+
+        with c2:
+            st.markdown(f"**Tabela:** `{tabela}`")
+
+        with c3:
+            st.markdown(f"**ID na lixeira:** `{id_lixeira}`")
+
+        st.write("**Dados armazenados:**")
+        st.json(registro)
+
+        b1, b2, _ = st.columns([1.4, 1.8, 5])
+
+        with b1:
+            if st.button(
+                "↩️ Restaurar",
+                key=f"restaurar_lixeira_{id_lixeira}",
+                use_container_width=True
+            ):
+                if restaurar_item_lixeira(item):
+                    st.success(f'"{nome}" restaurado com sucesso!')
+                    limpar_selecao("ids_sel_lixeira", "chk_lixeira_")
+                    st.rerun()
+
+        with b2:
+            if st.button(
+                "🧨 Excluir definitivo",
+                key=f"pedir_deldef_lixeira_{id_lixeira}",
+                use_container_width=True
+            ):
+                st.session_state[f"confirmar_deldef_lixeira_{id_lixeira}"] = True
+
+        if st.session_state.get(f"confirmar_deldef_lixeira_{id_lixeira}", False):
+            st.warning(
+                f"Tem certeza que deseja excluir definitivamente **{nome}** da lixeira? "
+                "Essa ação não poderá ser desfeita."
+            )
+
+            cdel1, cdel2, _ = st.columns([1, 1, 5])
+
+            with cdel1:
+                if st.button(
+                    "✅ Sim",
+                    key=f"sim_deldef_lixeira_{id_lixeira}",
+                    use_container_width=True
+                ):
+                    if excluir_lixeira_definitivo(item):
+                        st.session_state.pop(f"confirmar_deldef_lixeira_{id_lixeira}", None)
+                        limpar_selecao("ids_sel_lixeira", "chk_lixeira_")
+                        st.success("Item removido definitivamente.")
+                        st.rerun()
+
+            with cdel2:
+                if st.button(
+                    "❌ Não",
+                    key=f"nao_deldef_lixeira_{id_lixeira}",
+                    use_container_width=True
+                ):
+                    st.session_state.pop(f"confirmar_deldef_lixeira_{id_lixeira}", None)
+                    st.rerun()
+
+
+def render_aba_lixeira():
+    st.subheader("🗑️ Lixeira")
+
+    st.caption(
+        "Itens excluídos de Conversores e Relatórios BGR ficam armazenados no Supabase "
+        "e podem ser restaurados individualmente ou em lote."
+    )
+
+    df_lix = carregar_lixeira(apenas_nao_restaurados=True)
+
+    if df_lix.empty:
+        st.info("Nenhum item na lixeira.")
+        return
+
+    f1, f2, f3 = st.columns([2, 3, 2])
+
+    with f1:
+        filtro_tipo_lix = st.selectbox(
+            "Tipo:",
+            ["Todos", "conversores", "modelos_bgr"],
+            key="filtro_tipo_lixeira"
+        )
+
+    with f2:
+        busca_lix = st.text_input(
+            "Buscar:",
+            placeholder="Nome, tabela ou conteúdo...",
+            key="busca_lixeira"
+        )
+
+    with f3:
+        mostrar_restaurados = st.checkbox(
+            "Mostrar já restaurados",
+            value=False,
+            key="mostrar_restaurados_lixeira"
+        )
+
+    df_lix = carregar_lixeira(apenas_nao_restaurados=not mostrar_restaurados)
+
+    df_lix_f = df_lix.copy()
+
+    if filtro_tipo_lix != "Todos" and "tabela" in df_lix_f.columns:
+        df_lix_f = df_lix_f[df_lix_f["tabela"] == filtro_tipo_lix]
+
+    if busca_lix:
+        busca = busca_lix.strip()
+
+        cond = pd.Series(False, index=df_lix_f.index)
+
+        if "nome" in df_lix_f.columns:
+            cond = cond | df_lix_f["nome"].astype(str).str.contains(busca, case=False, na=False)
+
+        if "tabela" in df_lix_f.columns:
+            cond = cond | df_lix_f["tabela"].astype(str).str.contains(busca, case=False, na=False)
+
+        if "registro" in df_lix_f.columns:
+            cond = cond | df_lix_f["registro"].astype(str).str.contains(busca, case=False, na=False)
+
+        df_lix_f = df_lix_f[cond]
+
+    st.caption(f"{len(df_lix_f)} item(ns) encontrado(s).")
+
+    inicializar_selecao("ids_sel_lixeira")
+
+    if st.session_state.pop("reset_chk_lixeira", False):
+        limpar_selecao("ids_sel_lixeira", "chk_lixeira_")
+
+    modo_sel_lix = controle_modo_selecao(
+        "Modo seleção em lote",
+        key="modo_sel_lixeira",
+        help_text="Ative para restaurar ou excluir definitivamente vários itens da lixeira."
+    )
+
+    if not modo_sel_lix:
+        limpar_selecao("ids_sel_lixeira", "chk_lixeira_")
+        st.session_state.pop("popup_rest_lixeira", None)
+        st.session_state.pop("popup_deldef_lixeira", None)
+
+    if modo_sel_lix:
+        barra_selecao_lixeira(
+            key_ids="ids_sel_lixeira",
+            df_filtrado=df_lix_f,
+            prefixo_chk="chk_lixeira_"
+        )
+
+    ids_sel_lixeira = list(st.session_state.get("ids_sel_lixeira", set()))
+
+    if st.session_state.get("popup_rest_lixeira") and ids_sel_lixeira:
+        df_batch = df_lix_f[df_lix_f["id"].isin(ids_sel_lixeira)]
+
+        st.warning(f"⚠️ Restaurar **{len(df_batch)} item(ns)** selecionado(s)?")
+
+        cr1, cr2, _ = st.columns([1, 1, 6])
+
+        with cr1:
+            if st.button("✅ Confirmar", key="conf_rest_lixeira_lote", use_container_width=True):
+                qtd_ok = 0
+
+                for _, item in df_batch.iterrows():
+                    if restaurar_item_lixeira(item, acao_auditoria="RESTAURAÇÃO EM LOTE"):
+                        qtd_ok += 1
+
+                st.session_state["ids_sel_lixeira"] = set()
+                st.session_state["reset_chk_lixeira"] = True
+                st.session_state.pop("popup_rest_lixeira", None)
+
+                st.success(f"{qtd_ok} item(ns) restaurado(s).")
+                st.rerun()
+
+        with cr2:
+            if st.button("❌ Cancelar", key="canc_rest_lixeira_lote", use_container_width=True):
+                st.session_state.pop("popup_rest_lixeira", None)
+                st.rerun()
+
+    if st.session_state.get("popup_deldef_lixeira") and ids_sel_lixeira:
+        df_batch = df_lix_f[df_lix_f["id"].isin(ids_sel_lixeira)]
+
+        st.warning(
+            f"⚠️ Excluir definitivamente **{len(df_batch)} item(ns)** da lixeira? "
+            "Essa ação não poderá ser desfeita."
+        )
+
+        cd1, cd2, _ = st.columns([1.2, 1, 6])
+
+        with cd1:
+            if st.button("✅ Sim, excluir", key="conf_deldef_lixeira_lote", use_container_width=True):
+                qtd_ok = 0
+
+                for _, item in df_batch.iterrows():
+                    if excluir_lixeira_definitivo(
+                        item,
+                        acao_auditoria="EXCLUSÃO DEFINITIVA EM LOTE"
+                    ):
+                        qtd_ok += 1
+
+                st.session_state["ids_sel_lixeira"] = set()
+                st.session_state["reset_chk_lixeira"] = True
+                st.session_state.pop("popup_deldef_lixeira", None)
+
+                st.success(f"{qtd_ok} item(ns) removido(s) definitivamente.")
+                st.rerun()
+
+        with cd2:
+            if st.button("❌ Cancelar", key="canc_deldef_lixeira_lote", use_container_width=True):
+                st.session_state.pop("popup_deldef_lixeira", None)
+                st.rerun()
+
+    st.write("---")
+
+    if df_lix_f.empty:
+        st.info("Nenhum item encontrado com os filtros selecionados.")
+        return
+
+    for _, item in df_lix_f.iterrows():
+        id_lixeira = int(item.get("id"))
+
+        if modo_sel_lix:
+            csel, ccard = st.columns([0.35, 8])
+
+            with csel:
+                checkbox_linha_selecao("ids_sel_lixeira", "chk_lixeira_", id_lixeira)
+
+            with ccard:
+                render_card_lixeira(item)
+        else:
+            render_card_lixeira(item)
+
+    st.write("---")
+
+    df_export_lix = df_lix_f.copy()
+
+    if "registro" in df_export_lix.columns:
+        df_export_lix["registro"] = df_export_lix["registro"].apply(
+            lambda x: json.dumps(_parse_dict(x), ensure_ascii=False, default=str)
+        )
+
+    excel_lixeira = gerar_excel_download({"Lixeira": df_export_lix})
+
+    st.download_button(
+        "📥 Exportar lixeira",
+        data=excel_lixeira,
+        file_name="lixeira.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="dl_lixeira"
+    )
+
+# =========================================================
+# DADOS INICIAIS
+# =========================================================
+
+def inicializar_conversores_padrao():
+    df = carregar_tabela("conversores")
+
+    if not df.empty:
+        return
+
+    conversores_padrao = [
+        {
+            "nome": "Gerador RPA TXT",
+            "departamento": "Folha de Pagamento",
+            "descricao": "Gera arquivos TXT para processamento por RPA.",
+            "url": "https://gerador-rpa-txt.streamlit.app/",
+            "status": "Ativo"
+        },
+        {
+            "nome": "Converte Bens Domínio",
+            "departamento": "Patrimônio",
+            "descricao": "Conversor de bens patrimoniais para leiaute Domínio.",
+            "url": "https://convertebensdominio.streamlit.app/",
+            "status": "Ativo"
+        },
+        {
+            "nome": "Eventos Com Plano / Sem Plano",
+            "departamento": "Fiscal",
+            "descricao": "Ferramenta para tratar eventos com plano e sem plano.",
+            "url": "https://eventos-complano-semplano.streamlit.app/",
+            "status": "Ativo"
+        },
+        {
+            "nome": "Clientes e Fornecedores - Conta Patrimonial",
+            "departamento": "Contabilidade",
+            "descricao": "Tratamento de clientes, fornecedores e contas patrimoniais.",
+            "url": "https://clientes-fornecedores-conta-patrimonial.streamlit.app/",
+            "status": "Ativo"
+        },
+        {
+            "nome": "Conversor Leiaute com Separador Domínio",
+            "departamento": "Fiscal",
+            "descricao": "Conversor de leiaute com separador para o sistema Domínio.",
+            "url": "https://conversorleiautecomseparadordominio.streamlit.app/",
+            "status": "Ativo"
+        }
+    ]
+
+    for c in conversores_padrao:
+        c["data_cadastro"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        inserir_registro("conversores", c)
 
 # =========================================================
 # LISTA PÚBLICA
@@ -1119,11 +1481,6 @@ def _render_lista_publica(df_filtrado: pd.DataFrame, tipo: str):
                 if data_i:
                     st.markdown(f"**Data de cadastro:** {data_i}")
 
-                if stat_i == "Em manutenção":
-                    st.warning("Esta ferramenta está temporariamente em manutenção.")
-                elif stat_i == "Em desenvolvimento":
-                    st.info("Esta ferramenta está em desenvolvimento.")
-
             with d2:
                 if img_i:
                     iu = url_publica(BUCKET_IMAGENS, img_i)
@@ -1199,7 +1556,7 @@ inicializar_conversores_padrao()
 mostrar_logo()
 
 # =========================================================
-# MENU LATERAL
+# MENU
 # =========================================================
 
 st.sidebar.write("---")
@@ -1218,7 +1575,7 @@ abrir_admin = st.sidebar.checkbox("Abrir Painel Administrativo")
 pagina = "Painel Administrativo" if abrir_admin else pagina_publica
 
 # =========================================================
-# PÁGINA INÍCIO
+# INÍCIO
 # =========================================================
 
 if pagina == "Início":
@@ -1269,7 +1626,7 @@ if pagina == "Início":
             """, unsafe_allow_html=True)
 
 # =========================================================
-# CONVERSORES
+# CONVERSORES PÚBLICO
 # =========================================================
 
 elif pagina == "Conversores":
@@ -1319,7 +1676,7 @@ elif pagina == "Conversores":
     _render_lista_publica(df_f, tipo="conversor")
 
 # =========================================================
-# RELATÓRIOS BGR
+# BGR PÚBLICO
 # =========================================================
 
 elif pagina == "Relatórios BGR":
@@ -1387,14 +1744,14 @@ elif pagina == "Painel Administrativo":
     """, unsafe_allow_html=True)
 
     st.write("")
-    mostrar_lixeira()
 
-    aba1, aba2, aba3, aba4, aba5 = st.tabs([
+    aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
         "🛠️ Conversores",
         "📄 Modelos BGR",
         "📥 Solicitações",
         "📦 Exportações",
-        "🔍 Auditoria"
+        "🔍 Auditoria",
+        "🗑️ Lixeira"
     ])
 
     # =====================================================
@@ -1414,15 +1771,6 @@ elif pagina == "Painel Administrativo":
 
         if "expandir_form_conv" not in st.session_state:
             st.session_state["expandir_form_conv"] = False
-
-        col_novo_conv, _ = st.columns([1.4, 6])
-
-        with col_novo_conv:
-            if st.button("➕ Novo conversor", key="btn_novo_conv", use_container_width=True):
-                st.session_state["modo_conv"] = "cadastro"
-                st.session_state["editando_conv"] = None
-                st.session_state["expandir_form_conv"] = True
-                st.rerun()
 
         modo_conv = st.session_state.get("modo_conv", "cadastro")
         id_edit_conv = st.session_state.get("editando_conv")
@@ -1752,15 +2100,16 @@ elif pagina == "Painel Administrativo":
 
                     with csc:
                         if st.button("✅ Sim", key=f"sim_conv_{id_c}"):
-                            adicionar_lixeira("conversores", row_c.to_dict())
+                            dados_antes = row_c.to_dict()
 
-                            if excluir_registro("conversores", id_c):
-                                registrar_auditoria(
-                                    "EXCLUSÃO",
-                                    "conversores",
-                                    f"Conversor excluído: {nome_c}",
-                                    dados_antes=row_c.to_dict()
-                                )
+                            if adicionar_lixeira("conversores", dados_antes):
+                                if excluir_registro("conversores", id_c):
+                                    registrar_auditoria(
+                                        "EXCLUSÃO",
+                                        "conversores",
+                                        f"Conversor excluído: {nome_c}",
+                                        dados_antes=dados_antes
+                                    )
 
                             st.session_state.pop(f"popup_conv_{id_c}", None)
                             st.session_state["ids_sel_conv"].discard(id_c)
@@ -1793,16 +2142,16 @@ elif pagina == "Painel Administrativo":
 
                             r = registro_lote.iloc[0]
                             nome_item = valor_texto(r.get("nome", ""))
+                            dados_antes = r.to_dict()
 
-                            adicionar_lixeira("conversores", r.to_dict())
-
-                            if excluir_registro("conversores", int(id_l)):
-                                registrar_auditoria(
-                                    "EXCLUSÃO EM LOTE",
-                                    "conversores",
-                                    f"Conversor excluído em lote: {nome_item}",
-                                    dados_antes=r.to_dict()
-                                )
+                            if adicionar_lixeira("conversores", dados_antes):
+                                if excluir_registro("conversores", int(id_l)):
+                                    registrar_auditoria(
+                                        "EXCLUSÃO EM LOTE",
+                                        "conversores",
+                                        f"Conversor excluído em lote: {nome_item}",
+                                        dados_antes=dados_antes
+                                    )
 
                         st.session_state["ids_sel_conv"] = set()
                         st.session_state["reset_chk_conv"] = True
@@ -1833,15 +2182,6 @@ elif pagina == "Painel Administrativo":
 
         if "expandir_form_bgr" not in st.session_state:
             st.session_state["expandir_form_bgr"] = False
-
-        col_novo_bgr, _ = st.columns([1.6, 6])
-
-        with col_novo_bgr:
-            if st.button("➕ Novo modelo BGR", key="btn_novo_bgr", use_container_width=True):
-                st.session_state["modo_bgr"] = "cadastro"
-                st.session_state["editando_bgr"] = None
-                st.session_state["expandir_form_bgr"] = True
-                st.rerun()
 
         modo_bgr = st.session_state.get("modo_bgr", "cadastro")
         id_edit_bgr = st.session_state.get("editando_bgr")
@@ -2219,15 +2559,16 @@ elif pagina == "Painel Administrativo":
 
                     with csb:
                         if st.button("✅ Sim", key=f"sim_bgr_{id_b}"):
-                            adicionar_lixeira("modelos_bgr", row_b.to_dict())
+                            dados_antes = row_b.to_dict()
 
-                            if excluir_registro("modelos_bgr", id_b):
-                                registrar_auditoria(
-                                    "EXCLUSÃO",
-                                    "modelos_bgr",
-                                    f"Relatório BGR excluído: {nome_b}",
-                                    dados_antes=row_b.to_dict()
-                                )
+                            if adicionar_lixeira("modelos_bgr", dados_antes):
+                                if excluir_registro("modelos_bgr", id_b):
+                                    registrar_auditoria(
+                                        "EXCLUSÃO",
+                                        "modelos_bgr",
+                                        f"Relatório BGR excluído: {nome_b}",
+                                        dados_antes=dados_antes
+                                    )
 
                             st.session_state.pop(f"popup_bgr_{id_b}", None)
                             st.session_state["ids_sel_bgr"].discard(id_b)
@@ -2260,16 +2601,16 @@ elif pagina == "Painel Administrativo":
 
                             r_b = registro_lote_bgr.iloc[0]
                             nome_item = valor_texto(r_b.get("nome", ""))
+                            dados_antes = r_b.to_dict()
 
-                            adicionar_lixeira("modelos_bgr", r_b.to_dict())
-
-                            if excluir_registro("modelos_bgr", int(id_lb)):
-                                registrar_auditoria(
-                                    "EXCLUSÃO EM LOTE",
-                                    "modelos_bgr",
-                                    f"Relatório BGR excluído em lote: {nome_item}",
-                                    dados_antes=r_b.to_dict()
-                                )
+                            if adicionar_lixeira("modelos_bgr", dados_antes):
+                                if excluir_registro("modelos_bgr", int(id_lb)):
+                                    registrar_auditoria(
+                                        "EXCLUSÃO EM LOTE",
+                                        "modelos_bgr",
+                                        f"Relatório BGR excluído em lote: {nome_item}",
+                                        dados_antes=dados_antes
+                                    )
 
                         st.session_state["ids_sel_bgr"] = set()
                         st.session_state["reset_chk_bgr"] = True
@@ -2345,11 +2686,14 @@ elif pagina == "Painel Administrativo":
         st.subheader("📦 Exportar bases para Excel")
         st.info("A auditoria é registrada somente ao clicar no botão abaixo.")
 
+        df_lixeira_export = carregar_lixeira(apenas_nao_restaurados=False)
+
         excel_all = gerar_excel_download({
             "Conversores": carregar_tabela("conversores"),
             "Modelos_BGR": carregar_tabela("modelos_bgr"),
             "Solicitacoes_BGR": carregar_tabela("solicitacoes_bgr"),
             "Auditoria": carregar_tabela("auditoria"),
+            "Lixeira": df_lixeira_export
         })
 
         if st.button("📥 Gerar Excel completo", key="btn_gerar_excel"):
@@ -2402,6 +2746,9 @@ elif pagina == "Painel Administrativo":
                         "EXCLUSÃO",
                         "EXCLUSÃO EM LOTE",
                         "RESTAURAÇÃO",
+                        "RESTAURAÇÃO EM LOTE",
+                        "EXCLUSÃO DEFINITIVA",
+                        "EXCLUSÃO DEFINITIVA EM LOTE",
                         "EXPORTAÇÃO"
                     ],
                     key="f_acao_aud"
@@ -2415,6 +2762,7 @@ elif pagina == "Painel Administrativo":
                         "conversores",
                         "modelos_bgr",
                         "solicitacoes_bgr",
+                        "lixeira",
                         "todas"
                     ],
                     key="f_tab_aud"
@@ -2457,3 +2805,10 @@ elif pagina == "Painel Administrativo":
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 key="dl_aud"
             )
+
+    # =====================================================
+    # ABA 6 — LIXEIRA
+    # =====================================================
+
+    with aba6:
+        render_aba_lixeira()
