@@ -197,10 +197,18 @@ section[data-testid="stSidebar"] {
     border: 1px solid var(--tr-border);
     text-align: center;
     box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-    min-height: 205px;
+    height: 245px;
+    min-height: 245px;
+    max-height: 245px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     margin-bottom: 14px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
 }
 
 .setor-card:hover {
@@ -214,28 +222,45 @@ section[data-testid="stSidebar"] {
     border-left: none;
     padding-left: 0;
     color: var(--tr-orange);
-    margin-bottom: 10px;
+    margin: 0 0 16px 0;
+    font-size: 38px;
+    line-height: 1;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .setor-card h4 {
     color: var(--tr-text-main);
-    margin-bottom: 10px;
+    margin: 0 0 14px 0;
+    font-size: 21px;
+    line-height: 1.25;
+    min-height: 54px;
+    max-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .setor-card p {
     margin: 3px 0;
+    line-height: 1.25;
 }
 
 .setor-card .total-tools {
     font-size: 15px;
     font-weight: 800;
     color: #F5F5F5;
-    margin-top: 8px;
+    margin-top: 4px;
+    min-height: 22px;
 }
 
 .setor-card .sub-tools {
     font-size: 13px;
     color: #A8A8A8;
+    min-height: 18px;
 }
 
 .tipo-badge {
