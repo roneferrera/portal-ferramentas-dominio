@@ -40,6 +40,9 @@ STATUS_FERRAMENTAS = [
 BUCKET_IMAGENS = "imagens-bgr"
 BUCKET_BGR = "arquivos-bgr"
 
+# TTL padrão do cache em segundos
+CACHE_TTL = 60
+
 # =========================================================
 # ESTILO VISUAL
 # =========================================================
@@ -389,7 +392,13 @@ def get_supabase() -> Client:
     )
 
 
-def carregar_tabela(tabela: str) -> pd.DataFrame:
+# ---------------------------------------------------------
+# CACHE DE LEITURA — compartilhado entre todos os usuários
+# Após qualquer escrita, chamar invalidar_cache_tabela(tabela)
+# ---------------------------------------------------------
+
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+def _carregar_tabela_cached(tabela: str) -> pd.DataFrame:
     try:
         resp = get_supabase().table(tabela).select("*").execute()
         return pd.DataFrame(resp.data) if resp.data else pd.DataFrame()
@@ -398,9 +407,28 @@ def carregar_tabela(tabela: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def carregar_tabela(tabela: str) -> pd.DataFrame:
+    """Retorna DataFrame da tabela, usando cache compartilhado (TTL={CACHE_TTL}s)."""
+    return _carregar_tabela_cached(tabela)
+
+
+def invalidar_cache_tabela(tabela: str):
+    """
+    Limpa o cache da tabela após qualquer operação de escrita
+    (insert, update, delete). Garante que o próximo acesso
+    busque dados frescos do Supabase.
+    """
+    _carregar_tabela_cached.clear()
+
+
+# ---------------------------------------------------------
+# ESCRITA — sempre invalida o cache após operar
+# ---------------------------------------------------------
+
 def inserir_registro(tabela: str, dados: dict):
     try:
         get_supabase().table(tabela).insert(dados).execute()
+        invalidar_cache_tabela(tabela)
         return True
     except Exception as e:
         st.error(f"Erro ao inserir em '{tabela}': {e}")
@@ -410,6 +438,7 @@ def inserir_registro(tabela: str, dados: dict):
 def atualizar_registro(tabela: str, id_registro: int, dados: dict):
     try:
         get_supabase().table(tabela).update(dados).eq("id", id_registro).execute()
+        invalidar_cache_tabela(tabela)
         return True
     except Exception as e:
         st.error(f"Erro ao atualizar em '{tabela}': {e}")
@@ -419,6 +448,7 @@ def atualizar_registro(tabela: str, id_registro: int, dados: dict):
 def excluir_registro(tabela: str, id_registro: int):
     try:
         get_supabase().table(tabela).delete().eq("id", id_registro).execute()
+        invalidar_cache_tabela(tabela)
         return True
     except Exception as e:
         st.error(f"Erro ao excluir em '{tabela}': {e}")
@@ -807,6 +837,8 @@ def registrar_auditoria(acao, tabela, descricao, dados_antes="", dados_depois=""
 
     try:
         get_supabase().table("auditoria").insert(payload).execute()
+        # Invalida cache da auditoria para exibir o novo registro imediatamente
+        invalidar_cache_tabela("auditoria")
         st.session_state.pop("_erro_auditoria", None)
         return True
     except Exception as e:
@@ -836,6 +868,7 @@ def adicionar_lixeira(tabela, registro):
         }
 
         get_supabase().table("lixeira").insert(payload).execute()
+        invalidar_cache_tabela("lixeira")
         return True
 
     except Exception as e:
@@ -845,8 +878,7 @@ def adicionar_lixeira(tabela, registro):
 
 def carregar_lixeira(apenas_nao_restaurados=True):
     try:
-        resp = get_supabase().table("lixeira").select("*").execute()
-        df = pd.DataFrame(resp.data) if resp.data else pd.DataFrame()
+        df = carregar_tabela("lixeira")
 
         if df.empty:
             return df
@@ -896,6 +928,8 @@ def restaurar_item_lixeira(item, acao_auditoria="RESTAURAÇÃO"):
             "restaurado_em": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }).eq("id", id_lixeira).execute()
 
+        invalidar_cache_tabela("lixeira")
+
         registrar_auditoria(
             acao_auditoria,
             tabela,
@@ -921,6 +955,7 @@ def excluir_lixeira_definitivo(item, acao_auditoria="EXCLUSÃO DEFINITIVA"):
         registro = _parse_dict(item.get("registro", {}))
 
         get_supabase().table("lixeira").delete().eq("id", id_lixeira).execute()
+        invalidar_cache_tabela("lixeira")
 
         registrar_auditoria(
             acao_auditoria,
