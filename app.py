@@ -387,8 +387,8 @@ div[data-testid="stButton"] button {
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(
-        "https://hylhbsrckmygluiykdur.supabase.co",
-        st.secrets["SUPABASE_KEY"]
+        st.secrets["SUPABASE_URL"],   # ✅ from secrets
+        st.secrets["SUPABASE_KEY"]    # ✅ already correct
     )
 
 
