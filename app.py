@@ -37,8 +37,8 @@ STATUS_FERRAMENTAS = [
     "Em desenvolvimento"
 ]
 
-BUCKET_IMAGENS = "imagens-bgr"
-BUCKET_BGR = "arquivos-bgr"
+BUCKET_IMAGENS = st.secrets["BUCKET_IMAGENS"]
+BUCKET_BGR     = st.secrets["BUCKET_BGR"]
 
 # TTL padrão do cache em segundos
 CACHE_TTL = 60
